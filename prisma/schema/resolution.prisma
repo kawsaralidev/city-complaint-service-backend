@@ -1,0 +1,19 @@
+model Resolution {
+  id          String   @id @default(uuid())
+
+  complaintId String   @unique
+  officerId   String
+
+  description String
+  imageUrl    String?
+
+  resolvedAt  DateTime @default(now())
+
+  complaint   Complaint @relation(fields: [complaintId], references: [id])
+  officer     User      @relation("OfficerResolutions", fields: [officerId], references: [id])
+
+  @@index([officerId])
+  @@index([resolvedAt])
+
+  @@map("resolutions")
+}

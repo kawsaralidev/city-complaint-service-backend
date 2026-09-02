@@ -1,0 +1,21 @@
+model Assignment {
+  id               String   @id @default(uuid())
+
+  officerId        String
+  complaintId      String?  @unique
+  serviceRequestId String?  @unique
+
+  assignedBy       String
+  assignedAt       DateTime @default(now())
+
+  officer          User           @relation("OfficerAssignments", fields: [officerId], references: [id])
+  assigner         User           @relation("AssignedBy", fields: [assignedBy], references: [id])
+  complaint        Complaint?     @relation(fields: [complaintId], references: [id])
+  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id])
+
+  @@index([officerId])
+  @@index([assignedBy])
+  @@index([assignedAt])
+
+  @@map("assignments")
+}
