@@ -12,7 +12,12 @@ import { jwtUtils } from "../../utils/jwt";
 import { SignOptions } from "jsonwebtoken";
 
 // Register User
-const register = async (payload: IRegisterPayload) => {
+const register = async (
+  payload: IRegisterPayload,
+): Promise<{
+  email: string;
+  message: string;
+}> => {
   const { name, password } = payload;
   const email = payload.email.trim().toLowerCase();
 
@@ -23,6 +28,82 @@ const register = async (payload: IRegisterPayload) => {
     },
   });
 
+  // Allow credential setup for an existing Google-only account
+  if (isUserExists && isUserExists.googleId && !isUserExists.password) {
+    // Generate OTP
+    const otp = generateOtp();
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(
+      password,
+      Number(config.bcrypt_salt_rounds),
+    );
+
+    // Hash OTP before storing it in Redis
+    const hashedOtp = hashOtp(otp);
+
+    // Redis key for registration OTP
+    const otpKey = `registration-otp:${email}`;
+
+    // Redis key for temporary registration data
+    const registrationDataKey = `registration-data:${email}`;
+
+    // Temporary credential linking data
+    const registrationData = {
+      name: isUserExists.name,
+      email,
+      password: hashedPassword,
+      userId: isUserExists.id,
+      mode: "LINK_CREDENTIAL",
+    };
+
+    // Store hashed OTP in Redis for 5 minutes
+    await redisClient.set(otpKey, hashedOtp, {
+      EX: 300,
+    });
+
+    // Store temporary credential linking data in Redis for 5 minutes
+    await redisClient.set(
+      registrationDataKey,
+      JSON.stringify(registrationData),
+      {
+        EX: 300,
+      },
+    );
+
+    // Send OTP to user's email
+    await transporter.sendMail({
+      from: `"City Complaint Service" <${config.smtp_user}>`,
+      to: email,
+      subject: "Email Verification - City Complaint Service",
+      html: `
+        <h2>Email Verification</h2>
+
+        <p>Hello ${isUserExists.name},</p>
+
+        <p>
+          Your OTP for setting up credential login is:
+        </p>
+
+        <h1>${otp}</h1>
+
+        <p>
+          This OTP will expire in 5 minutes.
+        </p>
+
+        <p>
+          If you did not request this, please ignore this email.
+        </p>
+      `,
+    });
+
+    return {
+      email,
+      message: "OTP sent successfully. Please verify your email.",
+    };
+  }
+
+  // Reject registration if another user already exists
   if (isUserExists) {
     throw new AppError(
       HttpStatus.CONFLICT,
@@ -53,6 +134,7 @@ const register = async (payload: IRegisterPayload) => {
     name,
     email,
     password: hashedPassword,
+    mode: "REGISTER",
   };
 
   // Store hashed OTP in Redis for 5 minutes
@@ -71,25 +153,26 @@ const register = async (payload: IRegisterPayload) => {
     to: email,
     subject: "Email Verification - City Complaint Service",
     html: `
-		<h2>Email Verification</h2>
+      <h2>Email Verification</h2>
 
-		<p>Hello ${name},</p>
+      <p>Hello ${name},</p>
 
-		<p>
-			Your registration OTP is:
-		</p>
+      <p>
+        Your registration OTP is:
+      </p>
 
-		<h1>${otp}</h1>
+      <h1>${otp}</h1>
 
-		<p>
-			This OTP will expire in 5 minutes.
-		</p>
+      <p>
+        This OTP will expire in 5 minutes.
+      </p>
 
-		<p>
-			If you did not request this registration, please ignore this email.
-		</p>
-	`,
+      <p>
+        If you did not request this registration, please ignore this email.
+      </p>
+    `,
   });
+
   return {
     email,
     message: "Registration OTP sent successfully.",
@@ -145,7 +228,57 @@ const verifyRegisterEmail = async (payload: IVerifyEmailPayload) => {
     name: string;
     email: string;
     password: string;
+    userId?: string;
+    mode?: "REGISTER" | "LINK_CREDENTIAL";
   };
+
+  // Handle existing Google account credential linking
+  if (parsedData.mode === "LINK_CREDENTIAL") {
+    // Find the existing Google user
+    const user = await prisma.user.findUnique({
+      where: {
+        id: parsedData.userId,
+      },
+    });
+
+    // Throw an error if the Google user no longer exists
+    if (!user) {
+      await redisClient.del(otpKey);
+      await redisClient.del(registrationDataKey);
+
+      throw new AppError(
+        HttpStatus.NOT_FOUND,
+        "User account not found. Please register again.",
+      );
+    }
+
+    // Update the existing Google account with password
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        password: parsedData.password,
+      },
+    });
+
+    // Remove OTP and temporary registration data from Redis
+    await redisClient.del(otpKey);
+    await redisClient.del(registrationDataKey);
+
+    return {
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        status: updatedUser.status,
+        emailVerified: updatedUser.emailVerified,
+        googleId: updatedUser.googleId,
+      },
+      message: "Email verified and credential login linked successfully.",
+    };
+  }
 
   // Check if user already exists
   const isUserExists = await prisma.user.findUnique({
@@ -154,6 +287,7 @@ const verifyRegisterEmail = async (payload: IVerifyEmailPayload) => {
     },
   });
 
+  // Throw an error if user already exists
   if (isUserExists) {
     // Remove temporary registration data from Redis
     await redisClient.del(otpKey);

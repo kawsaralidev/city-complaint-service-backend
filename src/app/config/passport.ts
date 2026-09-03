@@ -41,6 +41,19 @@ passport.use(
           });
         }
 
+        // Link Google account with existing credential account
+        if (user && !user.googleId) {
+          user = await prisma.user.update({
+            where: {
+              id: user.id,
+            },
+            data: {
+              googleId,
+              emailVerified: true,
+            },
+          });
+        }
+
         // Create a new citizen if user does not exist
         if (!user) {
           user = await prisma.user.create({
