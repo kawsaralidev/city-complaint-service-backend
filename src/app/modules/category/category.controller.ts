@@ -26,7 +26,50 @@ const getAllCategories = async (req: Request, res: Response) => {
   });
 };
 
+// Get category by ID
+const getCategoryById = async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+
+  const category = await categoryService.getCategoryById(id);
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Category retrieved successfully.",
+    data: category,
+  });
+};
+
+// Update category
+const updateCategory = async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+
+  const category = await categoryService.updateCategory(id, req.body);
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Category updated successfully.",
+    data: category,
+  });
+};
+
+// Update category status
+const updateCategoryStatus = async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const { isActive } = req.body;
+
+  const category = await categoryService.updateCategoryStatus(id, isActive);
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Category status updated successfully.",
+    data: category,
+  });
+};
+
 export const categoryController = {
   createCategory,
   getAllCategories,
+  getCategoryById,
+  updateCategory,
+  updateCategoryStatus,
 };
