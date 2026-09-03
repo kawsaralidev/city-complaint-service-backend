@@ -14,4 +14,6 @@ router.post(
   categoryController.createCategory,
 );
 
+router.get("/", auth(), categoryController.getAllCategories);
+
 export const categoryRoutes = router;

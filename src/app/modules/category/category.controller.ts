@@ -15,6 +15,18 @@ const createCategory = async (req: Request, res: Response) => {
   });
 };
 
+// Get all active categories
+const getAllCategories = async (req: Request, res: Response) => {
+  const categories = await categoryService.getAllCategories();
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Categories retrieved successfully.",
+    data: categories,
+  });
+};
+
 export const categoryController = {
   createCategory,
+  getAllCategories,
 };
