@@ -1,7 +1,7 @@
 model Category {
   id          String   @id @default(uuid())
   name        String   @unique
-  description String?
+  type        CategoryType
   isActive    Boolean  @default(true)
 
   createdAt   DateTime @default(now())

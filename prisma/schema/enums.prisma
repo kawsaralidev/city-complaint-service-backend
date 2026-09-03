@@ -11,6 +11,11 @@ enum UserStatus {
   DELETED
 }
 
+enum CategoryType {
+  COMPLAINT
+  SERVICE
+}
+
 enum AuthProvider {
   GOOGLE 
   CREDENTIALS
