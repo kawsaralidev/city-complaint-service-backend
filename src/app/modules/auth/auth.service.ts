@@ -283,6 +283,70 @@ const login = async (payload: { email: string; password: string }) => {
   };
 };
 
+// Google Login
+const googleLogin = async (userId: string) => {
+  // Find authenticated Google user
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+
+  // Throw an error if user does not exist
+  if (!user) {
+    throw new AppError(HttpStatus.UNAUTHORIZED, "User not found.");
+  }
+
+  // Check if user account is deleted
+  if (user.deletedAt) {
+    throw new AppError(
+      HttpStatus.UNAUTHORIZED,
+      "Your account is no longer available.",
+    );
+  }
+
+  // Check if user account is blocked
+  if (user.status === "BLOCKED") {
+    throw new AppError(HttpStatus.FORBIDDEN, "Your account has been blocked.");
+  }
+
+  // Create access token
+  const accessToken = jwtUtils.createToken(
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    config.jwt_access_secret,
+    config.jwt_access_expires_in as SignOptions["expiresIn"],
+  );
+
+  // Create refresh token
+  const refreshToken = jwtUtils.createToken(
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    config.jwt_refresh_secret,
+    config.jwt_refresh_expires_in as SignOptions["expiresIn"],
+  );
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      emailVerified: user.emailVerified,
+      imageUrl: user.imageUrl,
+    },
+  };
+};
+
 // Refresh Access Token
 const refreshAccessToken = async (refreshToken: string) => {
   // Throw an error if refresh token is missing
@@ -398,6 +462,7 @@ export const authService = {
   register,
   verifyRegisterEmail,
   login,
+  googleLogin,
   refreshAccessToken,
   getCurrentUser,
 };

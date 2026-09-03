@@ -8,10 +8,14 @@ import { notFound } from "./app/middleware/notFound";
 import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 import { authRoutes } from "./app/modules/auth/auth.route";
 import cookieParser from "cookie-parser";
+import passport from "./app/config/passport";
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // routes
 app.use("/api/v1/auth", authRoutes);

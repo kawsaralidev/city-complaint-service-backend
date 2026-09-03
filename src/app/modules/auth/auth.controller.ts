@@ -54,6 +54,44 @@ const login = async (req: Request, res: Response) => {
   });
 };
 
+// Google Login
+const googleLogin = async (req: Request, res: Response) => {
+  // Get authenticated Google user
+  const user = req.user as
+    | {
+        id: string;
+      }
+    | undefined;
+
+  // Throw an error if Google user is missing
+  if (!user?.id) {
+    throw new AppError(
+      HttpStatus.UNAUTHORIZED,
+      "Google authentication failed.",
+    );
+  }
+
+  // Generate authentication tokens
+  const result = await authService.googleLogin(user.id);
+
+  // Store refresh token in an HttpOnly cookie
+  res.cookie("refreshToken", result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
+  // Send access token and user information
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Google login successful.",
+    data: {
+      accessToken: result.accessToken,
+      user: result.user,
+    },
+  });
+};
+
 // Refresh Access Token
 const refreshAccessToken = async (req: Request, res: Response) => {
   // Get refresh token from HttpOnly cookie
@@ -107,6 +145,7 @@ export const authController = {
   register,
   verifyRegisterEmail,
   login,
+  googleLogin,
   refreshAccessToken,
   getCurrentUser,
   logout,

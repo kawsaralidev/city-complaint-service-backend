@@ -9,6 +9,8 @@ import {
 } from "./auth.validation";
 import { auth } from "../../middleware/auth";
 
+import passport from "../../config/passport";
+
 const router = Router();
 
 router.post(
@@ -28,6 +30,22 @@ router.post("/login", validateRequest(loginSchema), authController.login);
 router.post("/refresh-token", authController.refreshAccessToken);
 
 router.get("/me", auth(), authController.getCurrentUser);
+
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+  }),
+);
+
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    session: false,
+  }),
+  authController.googleLogin,
+);
 
 router.post("/logout", authController.logout);
 
