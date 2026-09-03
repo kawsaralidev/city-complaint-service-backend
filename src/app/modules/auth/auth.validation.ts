@@ -23,3 +23,11 @@ export const resendRegistrationOtpSchema = z.object({
     email: z.email("Please provide a valid email address").trim().toLowerCase(),
   }),
 });
+
+// Login Validation
+export const loginSchema = z.object({
+  body: z.object({
+    email: z.email("Please provide a valid email address").trim().toLowerCase(),
+    password: z.string().min(1, "Password is required"),
+  }),
+});

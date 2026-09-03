@@ -7,9 +7,11 @@ import express, {
 import { notFound } from "./app/middleware/notFound";
 import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 import { authRoutes } from "./app/modules/auth/auth.route";
+import cookieParser from "cookie-parser";
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 
 // routes
 app.use("/api/v1/auth", authRoutes);

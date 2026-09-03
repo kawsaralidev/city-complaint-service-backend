@@ -8,6 +8,8 @@ import config from "../../config/index";
 import { redisClient } from "../../lib/redis";
 import { transporter } from "../../lib/nodemailer";
 import { IRegisterPayload, IVerifyEmailPayload } from "./auth.interface";
+import { jwtUtils } from "../../utils/jwt";
+import { SignOptions } from "jsonwebtoken";
 
 // Register User
 const register = async (payload: IRegisterPayload) => {
@@ -193,7 +195,166 @@ const verifyRegisterEmail = async (payload: IVerifyEmailPayload) => {
   };
 };
 
+// Login User
+const login = async (payload: { email: string; password: string }) => {
+  const email = payload.email.trim().toLowerCase();
+  const { password } = payload;
+
+  // Find user by email
+  const user = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  // Throw an error if user does not exist
+  if (!user) {
+    throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid email or password.");
+  }
+
+  // Check if user account is deleted
+  if (user.deletedAt) {
+    throw new AppError(
+      HttpStatus.UNAUTHORIZED,
+      "Your account is no longer available.",
+    );
+  }
+
+  // Check if user account is blocked
+  if (user.status === "BLOCKED") {
+    throw new AppError(HttpStatus.FORBIDDEN, "Your account has been blocked.");
+  }
+
+  // Check if email is verified
+  if (!user.emailVerified) {
+    throw new AppError(
+      HttpStatus.FORBIDDEN,
+      "Please verify your email before logging in.",
+    );
+  }
+
+  // Check if user has a password
+  if (!user.password) {
+    throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid email or password.");
+  }
+
+  // Compare the provided password with the hashed password
+  const isPasswordMatched = await bcrypt.compare(password, user.password);
+
+  // Throw an error if password is incorrect
+  if (!isPasswordMatched) {
+    throw new AppError(HttpStatus.UNAUTHORIZED, "Invalid email or password.");
+  }
+
+  // Create access token
+  const accessToken = jwtUtils.createToken(
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    config.jwt_access_secret,
+    config.jwt_access_expires_in as SignOptions["expiresIn"],
+  );
+
+  // Create refresh token
+  const refreshToken = jwtUtils.createToken(
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    config.jwt_refresh_secret,
+    config.jwt_refresh_expires_in as SignOptions["expiresIn"],
+  );
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      emailVerified: user.emailVerified,
+      imageUrl: user.imageUrl,
+    },
+  };
+};
+
+// Refresh Access Token
+const refreshAccessToken = async (refreshToken: string) => {
+  // Throw an error if refresh token is missing
+  if (!refreshToken) {
+    throw new AppError(HttpStatus.UNAUTHORIZED, "Refresh token is required.");
+  }
+
+  // Verify the refresh token
+  const verifiedToken = jwtUtils.verifyToken(
+    refreshToken,
+    config.jwt_refresh_secret,
+  );
+
+  // Throw an error if refresh token is invalid or expired
+  if (!verifiedToken.success) {
+    throw new AppError(
+      HttpStatus.UNAUTHORIZED,
+      "Invalid or expired refresh token.",
+    );
+  }
+
+  // Get user information from the verified token
+  const payload = verifiedToken.data as {
+    userId: string;
+    email: string;
+    role: string;
+  };
+
+  // Check if the user still exists
+  const user = await prisma.user.findUnique({
+    where: {
+      id: payload.userId,
+    },
+  });
+
+  // Throw an error if user does not exist
+  if (!user) {
+    throw new AppError(HttpStatus.UNAUTHORIZED, "User not found.");
+  }
+
+  // Check if user account is deleted
+  if (user.deletedAt) {
+    throw new AppError(
+      HttpStatus.UNAUTHORIZED,
+      "Your account is no longer available.",
+    );
+  }
+
+  // Check if user account is blocked
+  if (user.status === "BLOCKED") {
+    throw new AppError(HttpStatus.FORBIDDEN, "Your account has been blocked.");
+  }
+
+  // Create a new access token
+  const accessToken = jwtUtils.createToken(
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    config.jwt_access_secret,
+    config.jwt_access_expires_in as SignOptions["expiresIn"],
+  );
+
+  return {
+    accessToken,
+  };
+};
+
 export const authService = {
   register,
   verifyRegisterEmail,
+  login,
+  refreshAccessToken,
 };

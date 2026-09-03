@@ -2,7 +2,11 @@ import { Router } from "express";
 
 import { authController } from "./auth.controller";
 import { validateRequest } from "../../middleware/validateRequest";
-import { registerSchema, verifyRegistrationSchema } from "./auth.validation";
+import {
+  loginSchema,
+  registerSchema,
+  verifyRegistrationSchema,
+} from "./auth.validation";
 
 const router = Router();
 
@@ -19,5 +23,11 @@ router.post(
   validateRequest(verifyRegistrationSchema),
   authController.verifyRegisterEmail,
 );
+
+// Login User
+router.post("/login", validateRequest(loginSchema), authController.login);
+
+// Refresh Access Token
+// router.post("/refresh-token", authController.refreshAccessToken);
 
 export const authRoutes = router;

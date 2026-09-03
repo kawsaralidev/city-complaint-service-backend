@@ -30,7 +30,50 @@ const verifyRegisterEmail = async (req: Request, res: Response) => {
   });
 };
 
+// Login User
+const login = async (req: Request, res: Response) => {
+  // Get login credentials from request body
+  const result = await authService.login(req.body);
+
+  // Store refresh token in an HttpOnly cookie
+  res.cookie("refreshToken", result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
+  // Send access token and user information in response
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Login successful.",
+    data: {
+      accessToken: result.accessToken,
+      user: result.user,
+    },
+  });
+};
+
+// Refresh Access Token
+const refreshAccessToken = async (req: Request, res: Response) => {
+  // Get refresh token from HttpOnly cookie
+  const { refreshToken } = req.cookies;
+
+  // Generate a new access token
+  const result = await authService.refreshAccessToken(refreshToken);
+
+  // Send the new access token
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Access token refreshed successfully.",
+    data: {
+      accessToken: result.accessToken,
+    },
+  });
+};
+
 export const authController = {
   register,
   verifyRegisterEmail,
+  login,
+  refreshAccessToken,
 };
