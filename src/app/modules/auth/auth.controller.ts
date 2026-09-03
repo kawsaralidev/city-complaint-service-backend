@@ -85,11 +85,21 @@ const getCurrentUser = async (req: Request, res: Response) => {
   // Get current user information
   const result = await authService.getCurrentUser(userId);
 
-  // Send current user response
   res.status(HttpStatus.OK).json({
     success: true,
     message: "User profile retrieved successfully.",
     data: result,
+  });
+};
+
+// Logout User
+const logout = async (_req: Request, res: Response) => {
+  // Clear refresh token from HttpOnly cookie
+  res.clearCookie("refreshToken");
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Logout successful.",
+    data: null,
   });
 };
 
@@ -99,4 +109,5 @@ export const authController = {
   login,
   refreshAccessToken,
   getCurrentUser,
+  logout,
 };

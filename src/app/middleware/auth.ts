@@ -56,7 +56,6 @@ export const auth = (...requiredRoles: Role[]) => {
       // Get user information from verified token
       const { userId, role } = verifiedToken.data as JwtPayload & {
         email: string;
-        name: string;
         userId: string;
         role: Role;
       };
