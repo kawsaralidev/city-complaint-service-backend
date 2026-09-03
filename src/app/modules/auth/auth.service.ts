@@ -352,9 +352,52 @@ const refreshAccessToken = async (refreshToken: string) => {
   };
 };
 
+// Get Current User
+const getCurrentUser = async (userId: string) => {
+  // Find the authenticated user in the database
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+
+  // Throw an error if user does not exist
+  if (!user) {
+    throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
+  }
+
+  // Check if user account is deleted
+  if (user.deletedAt) {
+    throw new AppError(
+      HttpStatus.UNAUTHORIZED,
+      "Your account is no longer available.",
+    );
+  }
+
+  // Check if user account is blocked
+  if (user.status === "BLOCKED") {
+    throw new AppError(HttpStatus.FORBIDDEN, "Your account has been blocked.");
+  }
+
+  // Return current user information
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    emailVerified: user.emailVerified,
+    authProvider: user.authProvider,
+    imageUrl: user.imageUrl,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+};
+
 export const authService = {
   register,
   verifyRegisterEmail,
   login,
   refreshAccessToken,
+  getCurrentUser,
 };

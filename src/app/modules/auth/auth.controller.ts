@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { authService } from "./auth.service.js";
 import { HttpStatus } from "../../../constants/httpStatus.js";
+import { AppError } from "../../utils/AppError.js";
 
 // Register User
 const register = async (req: Request, res: Response) => {
@@ -71,9 +72,31 @@ const refreshAccessToken = async (req: Request, res: Response) => {
   });
 };
 
+// Get Current User
+const getCurrentUser = async (req: Request, res: Response) => {
+  // Get authenticated user ID from request
+  const userId = req.user?.userId;
+
+  // Throw an error if authenticated user information is missing
+  if (!userId) {
+    throw new AppError(HttpStatus.UNAUTHORIZED, "Authentication required.");
+  }
+
+  // Get current user information
+  const result = await authService.getCurrentUser(userId);
+
+  // Send current user response
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "User profile retrieved successfully.",
+    data: result,
+  });
+};
+
 export const authController = {
   register,
   verifyRegisterEmail,
   login,
   refreshAccessToken,
+  getCurrentUser,
 };
