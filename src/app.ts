@@ -1,9 +1,20 @@
 import "dotenv/config";
 import express, { NextFunction, Request, Response } from "express";
+import { notFound } from "./app/middleware/notFound";
+import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 
 const app = express();
 
-app.use(express.json());
+// routes
+// app.use("/api/v1/auth", authRoutes);
+// app.use("/api/v1/users", userRoutes);
+// etc.
+
+// 404
+app.use(notFound);
+
+// Global Error Handler
+app.use(globalErrorHandler);
 
 // Basic route
 app.get("/", async (req: Request, res: Response) => {

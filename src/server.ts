@@ -1,6 +1,6 @@
 import app from "./app.js";
 import config from "./app/config/index.js";
-import { prisma } from "./lib/prisma.js";
+import { prisma } from "./app/lib/prisma.js";
 
 const main = async () => {
   try {
@@ -18,5 +18,3 @@ const main = async () => {
 };
 
 main();
-
-
