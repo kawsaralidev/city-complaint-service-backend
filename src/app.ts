@@ -10,6 +10,7 @@ import { authRoutes } from "./app/modules/auth/auth.route";
 import cookieParser from "cookie-parser";
 import passport from "./app/config/passport";
 import { categoryRoutes } from "./app/modules/category/category.route";
+import { complaintRoutes } from "./app/modules/complaint/complaint.route";
 
 const app = express();
 app.use(express.json());
@@ -21,6 +22,7 @@ app.use(passport.initialize());
 // routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/categories", categoryRoutes);
+app.use("/api/v1/complaints", complaintRoutes);
 
 // 404
 app.use(notFound);
