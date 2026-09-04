@@ -20,3 +20,27 @@ export const createComplaintSchema = z.object({
     categoryId: z.string().uuid("Please provide a valid category ID"),
   }),
 });
+
+export const getAllComplaintsSchema = z.object({
+  query: z.object({
+    page: z.coerce.number().int().min(1).default(1),
+
+    limit: z.coerce.number().int().min(1).max(100).default(10),
+
+    search: z.string().trim().optional(),
+
+    status: z
+      .enum([
+        "PENDING",
+        "ASSIGNED",
+        "IN_PROGRESS",
+        "RESOLVED",
+        "CLOSED",
+        "REJECTED",
+        "CANCELED",
+      ])
+      .optional(),
+
+    categoryId: z.string().uuid().optional(),
+  }),
+});

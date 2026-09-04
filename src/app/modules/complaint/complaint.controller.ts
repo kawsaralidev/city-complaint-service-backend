@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { complaintService } from "./complaint.service";
+import { ComplaintStatus } from "../../../../generated/prisma/enums";
 
 // Create Complaint
 const createComplaint = async (req: Request, res: Response) => {
@@ -46,17 +47,18 @@ const getMyComplaints = async (req: Request, res: Response) => {
 // Get complaint by ID
 const getComplaintById = async (req: Request, res: Response) => {
   const complaintId = req.params.id as string;
-  const citizenId = req.user?.userId;
+  const userId = req.user?.userId;
+  const role = req.user?.role;
 
-  if (!citizenId) {
+  if (!userId || !role) {
     throw new Error("Authenticated user not found.");
   }
 
   const complaint = await complaintService.getComplaintById(
     complaintId,
-    citizenId,
+    userId,
+    role,
   );
-
   res.status(HttpStatus.OK).json({
     success: true,
     message: "Complaint retrieved successfully.",
@@ -64,8 +66,29 @@ const getComplaintById = async (req: Request, res: Response) => {
   });
 };
 
+// Get all complaints
+const getAllComplaints = async (req: Request, res: Response) => {
+  const result = await complaintService.getAllComplaints(
+    req.query as {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: ComplaintStatus;
+      categoryId?: string;
+    },
+  );
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Complaints retrieved successfully.",
+    data: result.complaints,
+    pagination: result.pagination,
+  });
+};
+
 export const complaintController = {
   createComplaint,
   getMyComplaints,
   getComplaintById,
+  getAllComplaints,
 };
