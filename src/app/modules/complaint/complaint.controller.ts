@@ -129,6 +129,48 @@ const assignComplaint = async (req: Request, res: Response) => {
   });
 };
 
+// Get Officer's assigned complaints
+const getAssignedComplaints = async (req: Request, res: Response) => {
+  const officerId = req.user?.userId;
+
+  if (!officerId) {
+    throw new Error("Authenticated user not found.");
+  }
+
+  const complaints = await complaintService.getAssignedComplaints(officerId);
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Assigned complaints retrieved successfully.",
+    data: complaints,
+  });
+};
+
+// Update Complaint Status
+const updateComplaintStatus = async (req: Request, res: Response) => {
+  const complaintId = req.params.id as string;
+  const userId = req.user?.userId;
+  const role = req.user?.role;
+  const { status } = req.body;
+
+  if (!userId || !role) {
+    throw new Error("Authenticated user not found.");
+  }
+
+  const complaint = await complaintService.updateComplaintStatus(
+    complaintId,
+    userId,
+    role,
+    status,
+  );
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Complaint status updated successfully.",
+    data: complaint,
+  });
+};
+
 export const complaintController = {
   createComplaint,
   getMyComplaints,
@@ -136,4 +178,6 @@ export const complaintController = {
   getAllComplaints,
   updateComplaint,
   assignComplaint,
+  getAssignedComplaints,
+  updateComplaintStatus,
 };

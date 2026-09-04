@@ -94,3 +94,12 @@ export const assignComplaintSchema = z.object({
     officerId: z.string().uuid("Please provide a valid officer ID"),
   }),
 });
+
+export const updateComplaintStatusSchema = z.object({
+  params: z.object({
+    id: z.string().uuid("Please provide a valid complaint ID"),
+  }),
+  body: z.object({
+    status: z.enum(["IN_PROGRESS", "RESOLVED", "CLOSED"]),
+  }),
+});

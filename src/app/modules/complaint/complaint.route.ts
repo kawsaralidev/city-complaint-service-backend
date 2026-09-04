@@ -8,6 +8,7 @@ import {
   createComplaintSchema,
   getAllComplaintsSchema,
   updateComplaintSchema,
+  updateComplaintStatusSchema,
 } from "./complaint.validation";
 import { Role } from "../../../../generated/prisma/enums";
 
@@ -21,6 +22,12 @@ router.post(
 );
 
 router.get("/my", auth(Role.CITIZEN), complaintController.getMyComplaints);
+
+router.get(
+  "/assigned",
+  auth(Role.OFFICER),
+  complaintController.getAssignedComplaints,
+);
 
 router.get(
   "/:id",
@@ -47,6 +54,13 @@ router.patch(
   auth(Role.ADMIN),
   validateRequest(assignComplaintSchema),
   complaintController.assignComplaint,
+);
+
+router.patch(
+  "/:id/status",
+  auth(Role.ADMIN, Role.OFFICER),
+  validateRequest(updateComplaintStatusSchema),
+  complaintController.updateComplaintStatus,
 );
 
 export const complaintRoutes = router;

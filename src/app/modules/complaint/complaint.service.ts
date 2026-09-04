@@ -336,6 +336,127 @@ const assignComplaint = async (
   return result;
 };
 
+// Get Officer's assigned complaints
+const getAssignedComplaints = async (officerId: string) => {
+  const assignments = await prisma.assignment.findMany({
+    where: {
+      officerId,
+      complaintId: {
+        not: null,
+      },
+    },
+    include: {
+      complaint: {
+        include: {
+          category: true,
+          citizen: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          resolution: true,
+        },
+      },
+    },
+    orderBy: {
+      assignedAt: "desc",
+    },
+  });
+
+  return assignments;
+};
+
+// Update Complaint Status
+const updateComplaintStatus = async (
+  complaintId: string,
+  userId: string,
+  role: Role,
+  newStatus: ComplaintStatus,
+) => {
+  // Check if complaint exists
+  const complaint = await prisma.complaint.findFirst({
+    where: {
+      id: complaintId,
+      deletedAt: null,
+    },
+  });
+
+  if (!complaint) {
+    throw new Error("Complaint not found.");
+  }
+
+  // Check officer assignment
+  if (role === Role.OFFICER) {
+    const assignment = await prisma.assignment.findUnique({
+      where: {
+        complaintId,
+      },
+    });
+
+    if (!assignment || assignment.officerId !== userId) {
+      throw new Error("You are not assigned to this complaint.");
+    }
+  }
+
+  // Check allowed status transition
+  if (
+    role === Role.OFFICER &&
+    complaint.status === ComplaintStatus.ASSIGNED &&
+    newStatus !== ComplaintStatus.IN_PROGRESS
+  ) {
+    throw new Error(
+      "Officer can only change an assigned complaint to in progress.",
+    );
+  }
+
+  if (
+    role === Role.OFFICER &&
+    complaint.status === ComplaintStatus.IN_PROGRESS &&
+    newStatus !== ComplaintStatus.RESOLVED
+  ) {
+    throw new Error(
+      "Officer can only change an in progress complaint to resolved.",
+    );
+  }
+
+  if (
+    role === Role.ADMIN &&
+    (complaint.status !== ComplaintStatus.RESOLVED ||
+      newStatus !== ComplaintStatus.CLOSED)
+  ) {
+    throw new Error("Admin can only close a resolved complaint.");
+  }
+
+  // Update complaint status
+  const updatedComplaint = await prisma.complaint.update({
+    where: {
+      id: complaintId,
+    },
+    data: {
+      status: newStatus,
+      ...(newStatus === ComplaintStatus.RESOLVED && {
+        resolvedAt: new Date(),
+      }),
+    },
+    include: {
+      category: true,
+      citizen: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      assignment: true,
+      resolution: true,
+    },
+  });
+
+  return updatedComplaint;
+};
+
 export const complaintService = {
   createComplaint,
   getMyComplaints,
@@ -343,4 +464,6 @@ export const complaintService = {
   getAllComplaints,
   updateComplaint,
   assignComplaint,
+  getAssignedComplaints,
+  updateComplaintStatus,
 };
