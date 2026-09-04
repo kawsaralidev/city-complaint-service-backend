@@ -5,6 +5,7 @@ import { validateRequest } from "../../middleware/validateRequest";
 import { complaintController } from "./complaint.controller";
 import {
   assignComplaintSchema,
+  createComplaintResolutionSchema,
   createComplaintSchema,
   getAllComplaintsSchema,
   updateComplaintSchema,
@@ -61,6 +62,13 @@ router.patch(
   auth(Role.ADMIN, Role.OFFICER),
   validateRequest(updateComplaintStatusSchema),
   complaintController.updateComplaintStatus,
+);
+
+router.post(
+  "/:id/resolution",
+  auth(Role.OFFICER),
+  validateRequest(createComplaintResolutionSchema),
+  complaintController.createComplaintResolution,
 );
 
 export const complaintRoutes = router;

@@ -6,6 +6,7 @@ model Resolution {
 
   description String
   imageUrl    String?
+  imagePublicId String?
 
   resolvedAt  DateTime @default(now())
 

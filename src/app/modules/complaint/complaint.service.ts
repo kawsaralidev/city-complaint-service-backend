@@ -457,6 +457,99 @@ const updateComplaintStatus = async (
   return updatedComplaint;
 };
 
+// Add Complaint Resolution
+const createComplaintResolution = async (
+  complaintId: string,
+  officerId: string,
+  data: {
+    description: string;
+    imageUrl?: string;
+  },
+) => {
+  // Check if complaint exists
+  const complaint = await prisma.complaint.findFirst({
+    where: {
+      id: complaintId,
+      deletedAt: null,
+    },
+  });
+
+  if (!complaint) {
+    throw new Error("Complaint not found.");
+  }
+
+  // Check complaint status
+  if (complaint.status !== ComplaintStatus.IN_PROGRESS) {
+    throw new Error(
+      "Resolution can only be added to an in progress complaint.",
+    );
+  }
+
+  // Check officer assignment
+  const assignment = await prisma.assignment.findUnique({
+    where: {
+      complaintId,
+    },
+  });
+
+  if (!assignment || assignment.officerId !== officerId) {
+    throw new Error("You are not assigned to this complaint.");
+  }
+
+  // Check if resolution already exists
+  const existingResolution = await prisma.resolution.findUnique({
+    where: {
+      complaintId,
+    },
+  });
+
+  if (existingResolution) {
+    throw new Error("Resolution already exists for this complaint.");
+  }
+
+  // Create resolution and update complaint status
+  const result = await prisma.$transaction(async (tx) => {
+    const resolution = await tx.resolution.create({
+      data: {
+        complaintId,
+        officerId,
+        description: data.description,
+        imageUrl: data.imageUrl,
+      },
+      include: {
+        officer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    const updatedComplaint = await tx.complaint.update({
+      where: {
+        id: complaintId,
+      },
+      data: {
+        status: ComplaintStatus.RESOLVED,
+        resolvedAt: resolution.resolvedAt,
+      },
+      include: {
+        category: true,
+        resolution: true,
+      },
+    });
+
+    return {
+      resolution,
+      complaint: updatedComplaint,
+    };
+  });
+
+  return result;
+};
+
 export const complaintService = {
   createComplaint,
   getMyComplaints,
@@ -466,4 +559,5 @@ export const complaintService = {
   assignComplaint,
   getAssignedComplaints,
   updateComplaintStatus,
+  createComplaintResolution,
 };

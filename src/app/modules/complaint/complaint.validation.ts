@@ -103,3 +103,16 @@ export const updateComplaintStatusSchema = z.object({
     status: z.enum(["IN_PROGRESS", "RESOLVED", "CLOSED"]),
   }),
 });
+
+export const createComplaintResolutionSchema = z.object({
+  params: z.object({
+    id: z.string().uuid("Please provide a valid complaint ID"),
+  }),
+  body: z.object({
+    description: z
+      .string()
+      .trim()
+      .min(10, "Resolution description must be at least 10 characters"),
+    imageUrl: z.string().url("Please provide a valid image URL").optional(),
+  }),
+});

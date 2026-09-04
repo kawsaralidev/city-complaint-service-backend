@@ -171,6 +171,28 @@ const updateComplaintStatus = async (req: Request, res: Response) => {
   });
 };
 
+// Add Complaint Resolution
+const createComplaintResolution = async (req: Request, res: Response) => {
+  const complaintId = req.params.id as string;
+  const officerId = req.user?.userId;
+
+  if (!officerId) {
+    throw new Error("Authenticated user not found.");
+  }
+
+  const result = await complaintService.createComplaintResolution(
+    complaintId,
+    officerId,
+    req.body,
+  );
+
+  res.status(HttpStatus.CREATED).json({
+    success: true,
+    message: "Complaint resolution added successfully.",
+    data: result,
+  });
+};
+
 export const complaintController = {
   createComplaint,
   getMyComplaints,
@@ -180,4 +202,5 @@ export const complaintController = {
   assignComplaint,
   getAssignedComplaints,
   updateComplaintStatus,
+  createComplaintResolution,
 };
