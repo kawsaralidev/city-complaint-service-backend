@@ -186,9 +186,161 @@ const getAllComplaints = async (query: {
   };
 };
 
+// Update Complaint
+const updateComplaint = async (
+  complaintId: string,
+  citizenId: string,
+  data: {
+    title?: string;
+    description?: string;
+    location?: string;
+    categoryId?: string;
+  },
+) => {
+  // Check if complaint exists
+  const complaint = await prisma.complaint.findFirst({
+    where: {
+      id: complaintId,
+      citizenId,
+      deletedAt: null,
+    },
+  });
+
+  if (!complaint) throw new Error("Complaint not found.");
+
+  // Check complaint status
+  if (complaint.status !== ComplaintStatus.PENDING) {
+    throw new Error("Only pending complaints can be edited.");
+  }
+
+  // Check category if categoryId is provided
+  if (data.categoryId) {
+    const category = await prisma.category.findUnique({
+      where: { id: data.categoryId },
+    });
+
+    if (!category) throw new Error("Category not found.");
+
+    if (!category.isActive) {
+      throw new Error("This category is currently inactive.");
+    }
+
+    if (category.type !== "COMPLAINT") {
+      throw new Error("This category cannot be used for complaints.");
+    }
+  }
+
+  // Update complaint
+  const updatedComplaint = await prisma.complaint.update({
+    where: { id: complaintId },
+    data,
+    include: {
+      category: true,
+    },
+  });
+
+  return updatedComplaint;
+};
+
+// Assign Complaint
+const assignComplaint = async (
+  complaintId: string,
+  officerId: string,
+  assignedBy: string,
+) => {
+  // Check if complaint exists
+  const complaint = await prisma.complaint.findFirst({
+    where: {
+      id: complaintId,
+      deletedAt: null,
+    },
+  });
+
+  if (!complaint) throw new Error("Complaint not found.");
+
+  // Check complaint status
+  if (complaint.status !== ComplaintStatus.PENDING) {
+    throw new Error("Only pending complaints can be assigned.");
+  }
+
+  // Check if officer exists
+  const officer = await prisma.user.findFirst({
+    where: {
+      id: officerId,
+      role: "OFFICER",
+      status: "ACTIVE",
+      deletedAt: null,
+    },
+  });
+
+  if (!officer) {
+    throw new Error("Active officer not found.");
+  }
+
+  // Check if complaint is already assigned
+  const existingAssignment = await prisma.assignment.findUnique({
+    where: {
+      complaintId,
+    },
+  });
+
+  if (existingAssignment) {
+    throw new Error("Complaint is already assigned.");
+  }
+
+  // Assign complaint and update status
+  const result = await prisma.$transaction(async (tx) => {
+    const assignment = await tx.assignment.create({
+      data: {
+        officerId,
+        complaintId,
+        assignedBy,
+      },
+      include: {
+        officer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assigner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    const updatedComplaint = await tx.complaint.update({
+      where: {
+        id: complaintId,
+      },
+      data: {
+        status: ComplaintStatus.ASSIGNED,
+        assignedAt: assignment.assignedAt,
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    return {
+      assignment,
+      complaint: updatedComplaint,
+    };
+  });
+
+  return result;
+};
+
 export const complaintService = {
   createComplaint,
   getMyComplaints,
   getComplaintById,
   getAllComplaints,
+  updateComplaint,
+  assignComplaint,
 };

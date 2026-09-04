@@ -86,9 +86,54 @@ const getAllComplaints = async (req: Request, res: Response) => {
   });
 };
 
+// Update Complaint
+const updateComplaint = async (req: Request, res: Response) => {
+  const complaintId = req.params.id as string;
+  const citizenId = req.user?.userId;
+
+  if (!citizenId) throw new Error("Authenticated user not found.");
+
+  const complaint = await complaintService.updateComplaint(
+    complaintId,
+    citizenId,
+    req.body,
+  );
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Complaint updated successfully.",
+    data: complaint,
+  });
+};
+
+// Assign Complaint
+const assignComplaint = async (req: Request, res: Response) => {
+  const complaintId = req.params.id as string;
+  const assignedBy = req.user?.userId;
+  const { officerId } = req.body;
+
+  if (!assignedBy) {
+    throw new Error("Authenticated user not found.");
+  }
+
+  const result = await complaintService.assignComplaint(
+    complaintId,
+    officerId,
+    assignedBy,
+  );
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Complaint assigned successfully.",
+    data: result,
+  });
+};
+
 export const complaintController = {
   createComplaint,
   getMyComplaints,
   getComplaintById,
   getAllComplaints,
+  updateComplaint,
+  assignComplaint,
 };
