@@ -28,6 +28,62 @@ const createService = async (data: {
   return service;
 };
 
+const getActiveServices = async () => {
+  const services = await prisma.service.findMany({
+    where: {
+      isActive: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return services;
+};
+
+const updateService = async (
+  serviceId: string,
+  data: {
+    name?: string;
+    description?: string;
+    baseFee?: number;
+    isActive?: boolean;
+  },
+) => {
+  const existingService = await prisma.service.findUnique({
+    where: {
+      id: serviceId,
+    },
+  });
+
+  if (!existingService) {
+    throw new Error("Service not found.");
+  }
+
+  if (data.name && data.name !== existingService.name) {
+    const duplicateService = await prisma.service.findUnique({
+      where: {
+        name: data.name,
+      },
+    });
+
+    if (duplicateService) {
+      throw new Error("A service with this name already exists.");
+    }
+  }
+
+  const service = await prisma.service.update({
+    where: {
+      id: serviceId,
+    },
+    data,
+  });
+
+  return service;
+};
+
 export const serviceService = {
   createService,
+  getActiveServices,
+  updateService,
 };
