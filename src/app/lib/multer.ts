@@ -1,6 +1,13 @@
 import multer from "multer";
 
-// Set up Multer for handling file uploads
+// Store uploaded image in memory
 const storage = multer.memoryStorage();
 
-export const upload = multer({ storage: storage });
+export const upload = multer({
+  storage,
+
+  // Maximum image size: 1 MB
+  limits: {
+    fileSize: 1 * 1024 * 1024,
+  },
+});

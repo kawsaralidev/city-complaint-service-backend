@@ -1,5 +1,6 @@
 import { ComplaintStatus, Role } from "../../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
+import { deleteFromCloudinary } from "../../utils/cloudinary";
 
 // Create Complaint
 const createComplaint = async (
@@ -9,6 +10,8 @@ const createComplaint = async (
     description: string;
     location: string;
     categoryId: string;
+    imageUrl?: string;
+    imagePublicId?: string;
   },
 ) => {
   // Check if category exists
@@ -41,6 +44,8 @@ const createComplaint = async (
       location: data.location,
       categoryId: data.categoryId,
       citizenId,
+      imageUrl: data.imageUrl,
+      imagePublicId: data.imagePublicId,
     },
     include: {
       category: true,
@@ -195,6 +200,8 @@ const updateComplaint = async (
     description?: string;
     location?: string;
     categoryId?: string;
+    imageUrl?: string;
+    imagePublicId?: string;
   },
 ) => {
   // Check if complaint exists
@@ -230,6 +237,9 @@ const updateComplaint = async (
     }
   }
 
+  // Store old image public ID
+  const oldImagePublicId = complaint.imagePublicId;
+
   // Update complaint
   const updatedComplaint = await prisma.complaint.update({
     where: { id: complaintId },
@@ -238,6 +248,11 @@ const updateComplaint = async (
       category: true,
     },
   });
+
+  // Delete old image from Cloudinary if a new image was uploaded
+  if (data.imagePublicId && oldImagePublicId) {
+    await deleteFromCloudinary(oldImagePublicId);
+  }
 
   return updatedComplaint;
 };
@@ -464,6 +479,7 @@ const createComplaintResolution = async (
   data: {
     description: string;
     imageUrl?: string;
+    imagePublicId?: string;
   },
 ) => {
   // Check if complaint exists
@@ -515,6 +531,7 @@ const createComplaintResolution = async (
         officerId,
         description: data.description,
         imageUrl: data.imageUrl,
+        imagePublicId: data.imagePublicId,
       },
       include: {
         officer: {

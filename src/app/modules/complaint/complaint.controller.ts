@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { complaintService } from "./complaint.service";
 import { ComplaintStatus } from "../../../../generated/prisma/enums";
+import { uploadToCloudinary } from "../../utils/cloudinary";
 
 // Create Complaint
 const createComplaint = async (req: Request, res: Response) => {
@@ -13,11 +14,24 @@ const createComplaint = async (req: Request, res: Response) => {
     throw new Error("Authenticated user not found.");
   }
 
+  let imageUrl: string | undefined;
+  let imagePublicId: string | undefined;
+
+  // Upload image to Cloudinary
+  if (req.file) {
+    const result = await uploadToCloudinary(req.file.buffer, "city-complaints");
+
+    imageUrl = result.secure_url;
+    imagePublicId = result.public_id;
+  }
+
   const complaint = await complaintService.createComplaint(citizenId, {
     title,
     description,
     location,
     categoryId,
+    imageUrl,
+    imagePublicId,
   });
 
   res.status(HttpStatus.CREATED).json({
@@ -92,11 +106,25 @@ const updateComplaint = async (req: Request, res: Response) => {
   const citizenId = req.user?.userId;
 
   if (!citizenId) throw new Error("Authenticated user not found.");
+  let imageUrl: string | undefined;
+  let imagePublicId: string | undefined;
+
+  // Upload new image to Cloudinary
+  if (req.file) {
+    const result = await uploadToCloudinary(req.file.buffer, "city-complaints");
+
+    imageUrl = result.secure_url;
+    imagePublicId = result.public_id;
+  }
 
   const complaint = await complaintService.updateComplaint(
     complaintId,
     citizenId,
-    req.body,
+    {
+      ...req.body,
+      imageUrl,
+      imagePublicId,
+    },
   );
 
   res.status(HttpStatus.OK).json({
@@ -180,10 +208,28 @@ const createComplaintResolution = async (req: Request, res: Response) => {
     throw new Error("Authenticated user not found.");
   }
 
+  let imageUrl: string | undefined;
+  let imagePublicId: string | undefined;
+
+  // Upload resolution image to Cloudinary
+  if (req.file) {
+    const result = await uploadToCloudinary(
+      req.file.buffer,
+      "city-complaint-resolutions",
+    );
+
+    imageUrl = result.secure_url;
+    imagePublicId = result.public_id;
+  }
+
   const result = await complaintService.createComplaintResolution(
     complaintId,
     officerId,
-    req.body,
+    {
+      ...req.body,
+      imageUrl,
+      imagePublicId,
+    },
   );
 
   res.status(HttpStatus.CREATED).json({

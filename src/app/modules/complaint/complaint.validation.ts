@@ -113,6 +113,5 @@ export const createComplaintResolutionSchema = z.object({
       .string()
       .trim()
       .min(10, "Resolution description must be at least 10 characters"),
-    imageUrl: z.string().url("Please provide a valid image URL").optional(),
   }),
 });

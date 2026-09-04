@@ -12,12 +12,14 @@ import {
   updateComplaintStatusSchema,
 } from "./complaint.validation";
 import { Role } from "../../../../generated/prisma/enums";
+import { upload } from "../../lib/multer";
 
 const router = Router();
 
 router.post(
   "/",
   auth(Role.CITIZEN),
+  upload.single("image"),
   validateRequest(createComplaintSchema),
   complaintController.createComplaint,
 );
@@ -46,6 +48,7 @@ router.get(
 router.patch(
   "/:id",
   auth(Role.CITIZEN),
+  upload.single("image"),
   validateRequest(updateComplaintSchema),
   complaintController.updateComplaint,
 );
@@ -67,6 +70,7 @@ router.patch(
 router.post(
   "/:id/resolution",
   auth(Role.OFFICER),
+  upload.single("image"),
   validateRequest(createComplaintResolutionSchema),
   complaintController.createComplaintResolution,
 );
