@@ -49,6 +49,49 @@ const createComplaint = async (
   return complaint;
 };
 
+// Get citizen's complaints
+const getMyComplaints = async (citizenId: string) => {
+  const complaints = await prisma.complaint.findMany({
+    where: {
+      citizenId,
+      deletedAt: null,
+    },
+    include: {
+      category: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return complaints;
+};
+
+// Get complaint by ID
+const getComplaintById = async (complaintId: string, citizenId: string) => {
+  const complaint = await prisma.complaint.findFirst({
+    where: {
+      id: complaintId,
+      citizenId,
+      deletedAt: null,
+    },
+    include: {
+      category: true,
+      assignment: true,
+      resolution: true,
+    },
+  });
+
+  // Throw an error if complaint does not exist
+  if (!complaint) {
+    throw new Error("Complaint not found.");
+  }
+
+  return complaint;
+};
+
 export const complaintService = {
   createComplaint,
+  getMyComplaints,
+  getComplaintById,
 };

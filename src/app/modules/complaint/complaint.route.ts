@@ -15,4 +15,8 @@ router.post(
   complaintController.createComplaint,
 );
 
+router.get("/my", auth(Role.CITIZEN), complaintController.getMyComplaints);
+
+router.get("/:id", auth(Role.CITIZEN), complaintController.getComplaintById);
+
 export const complaintRoutes = router;

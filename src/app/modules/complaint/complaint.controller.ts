@@ -26,6 +26,46 @@ const createComplaint = async (req: Request, res: Response) => {
   });
 };
 
+// Get citizen's complaints
+const getMyComplaints = async (req: Request, res: Response) => {
+  const citizenId = req.user?.userId;
+
+  if (!citizenId) {
+    throw new Error("Authenticated user not found.");
+  }
+
+  const complaints = await complaintService.getMyComplaints(citizenId);
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Complaints retrieved successfully.",
+    data: complaints,
+  });
+};
+
+// Get complaint by ID
+const getComplaintById = async (req: Request, res: Response) => {
+  const complaintId = req.params.id as string;
+  const citizenId = req.user?.userId;
+
+  if (!citizenId) {
+    throw new Error("Authenticated user not found.");
+  }
+
+  const complaint = await complaintService.getComplaintById(
+    complaintId,
+    citizenId,
+  );
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Complaint retrieved successfully.",
+    data: complaint,
+  });
+};
+
 export const complaintController = {
   createComplaint,
+  getMyComplaints,
+  getComplaintById,
 };
