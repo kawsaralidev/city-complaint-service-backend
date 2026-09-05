@@ -40,6 +40,30 @@ const createServiceRequest = async (
   return serviceRequest;
 };
 
+const getAllServiceRequests = async () => {
+  const serviceRequests = await prisma.serviceRequest.findMany({
+    where: {
+      deletedAt: null,
+    },
+    include: {
+      citizen: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      service: true,
+      payment: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return serviceRequests;
+};
+
 const getMyServiceRequests = async (citizenId: string) => {
   const serviceRequests = await prisma.serviceRequest.findMany({
     where: {
@@ -81,6 +105,7 @@ const getServiceRequestById = async (id: string, citizenId: string) => {
 
 export const serviceRequestService = {
   createServiceRequest,
+  getAllServiceRequests,
   getMyServiceRequests,
   getServiceRequestById,
 };

@@ -15,6 +15,12 @@ router.post(
 );
 
 router.get(
+  "/",
+  auth(Role.ADMIN),
+  serviceRequestController.getAllServiceRequests,
+);
+
+router.get(
   "/my",
   auth(Role.CITIZEN),
   serviceRequestController.getMyServiceRequests,
