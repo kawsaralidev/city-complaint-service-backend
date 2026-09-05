@@ -4,6 +4,7 @@ import express, {
   type Request,
   type Response,
 } from "express";
+import cors from "cors";
 import { notFound } from "./app/middleware/notFound";
 import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 import { authRoutes } from "./app/modules/auth/auth.route";
@@ -13,8 +14,19 @@ import { categoryRoutes } from "./app/modules/category/category.route";
 import { complaintRoutes } from "./app/modules/complaint/complaint.route";
 import { serviceRoutes } from "./app/modules/service/service.routes";
 import { serviceRequestRoutes } from "./app/modules/serviceRequest/service-request.route";
+import config from "./app/config";
+import { paymentRoutes } from "./app/modules/payment/payment.route";
 
 const app = express();
+
+app.use("/api/v1/payments/webhook", express.raw({ type: "application/json" }));
+
+app.use(
+  cors({
+    origin: config.app_url,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 
@@ -27,6 +39,7 @@ app.use("/api/v1/categories", categoryRoutes);
 app.use("/api/v1/complaints", complaintRoutes);
 app.use("/api/v1/services", serviceRoutes);
 app.use("/api/v1/service-requests", serviceRequestRoutes);
+app.use("/api/v1/payments", paymentRoutes);
 
 // 404
 app.use(notFound);

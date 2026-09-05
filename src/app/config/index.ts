@@ -7,7 +7,7 @@ export default {
   node_env: process.env.NODE_ENV,
   port: process.env.PORT,
   database_url: process.env.DATABASE_URL,
-  bak_url: process.env.APP_URL,
+  app_url: process.env.APP_URL,
   frontend_url: process.env.FRONTEND_URL,
   bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
   jwt_access_secret: process.env.JWT_ACCESS_SECRET!,
@@ -27,4 +27,8 @@ export default {
   cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
   cloudinary_api_key: process.env.CLOUDINARY_API_KEY!,
   cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET!,
+  stripe_secret_key: process.env.STRIPE_SECRET_KEY,
+  stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
+  stripe_success_url: process.env.STRIPE_SUCCESS_URL,
+  stripe_cancel_url: process.env.STRIPE_CANCEL_URL,
 };
