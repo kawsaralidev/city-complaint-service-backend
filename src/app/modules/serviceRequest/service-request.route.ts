@@ -20,4 +20,10 @@ router.get(
   serviceRequestController.getMyServiceRequests,
 );
 
+router.get(
+  "/:id",
+  auth(Role.CITIZEN),
+  serviceRequestController.getServiceRequestById,
+);
+
 export const serviceRequestRoutes = router;

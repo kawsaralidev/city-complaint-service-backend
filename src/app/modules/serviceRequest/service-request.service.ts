@@ -58,7 +58,29 @@ const getMyServiceRequests = async (citizenId: string) => {
   return serviceRequests;
 };
 
+const getServiceRequestById = async (id: string, citizenId: string) => {
+  const serviceRequest = await prisma.serviceRequest.findFirst({
+    where: {
+      id,
+      citizenId,
+      deletedAt: null,
+    },
+    include: {
+      service: true,
+      payment: true,
+    },
+  });
+
+  // Throw an error if service request does not exist
+  if (!serviceRequest) {
+    throw new Error("Service request not found.");
+  }
+
+  return serviceRequest;
+};
+
 export const serviceRequestService = {
   createServiceRequest,
   getMyServiceRequests,
+  getServiceRequestById,
 };
