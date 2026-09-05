@@ -6,6 +6,7 @@ import {
   assignServiceRequestSchema,
   createServiceRequestSchema,
   reviewServiceRequestSchema,
+  updateServiceRequestStatusInProgressSchema,
 } from "./service-request.validation";
 import { serviceRequestController } from "./service-request.controller";
 
@@ -48,6 +49,13 @@ router.patch(
   auth(Role.ADMIN),
   validateRequest(reviewServiceRequestSchema),
   serviceRequestController.UpdateServiceRequestStatus,
+);
+
+router.patch(
+  "/:id/status",
+  auth(Role.OFFICER),
+  validateRequest(updateServiceRequestStatusInProgressSchema),
+  serviceRequestController.updateServiceRequestInProgressStatus,
 );
 
 export const serviceRequestRoutes = router;

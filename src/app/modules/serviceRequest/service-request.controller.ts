@@ -107,6 +107,32 @@ const assignServiceRequest = async (req: Request, res: Response) => {
   });
 };
 
+const updateServiceRequestInProgressStatus = async (
+  req: Request,
+  res: Response,
+) => {
+  const officerId = req.user?.userId;
+
+  if (!officerId) {
+    throw new Error("Authenticated user not found.");
+  }
+
+  const serviceRequestId = req.params.id as string;
+
+  const serviceRequest =
+    await serviceRequestService.updateServiceRequestInProgressStatus(
+      serviceRequestId,
+      officerId,
+      req.body,
+    );
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Service request status updated successfully.",
+    data: serviceRequest,
+  });
+};
+
 export const serviceRequestController = {
   createServiceRequest,
   getAllServiceRequests,
@@ -114,4 +140,5 @@ export const serviceRequestController = {
   getServiceRequestById,
   UpdateServiceRequestStatus,
   assignServiceRequest,
+  updateServiceRequestInProgressStatus,
 };

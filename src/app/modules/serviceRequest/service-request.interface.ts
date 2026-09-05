@@ -11,3 +11,7 @@ export interface IReviewServiceRequestPayload {
 export interface IAssignServiceRequestPayload {
   officerId: string;
 }
+
+export interface IUpdateServiceRequestStatusInProgressPayload {
+  status: "IN_PROGRESS" | "COMPLETED";
+}

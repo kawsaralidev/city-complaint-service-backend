@@ -3,6 +3,7 @@ import {
   IAssignServiceRequestPayload,
   ICreateServiceRequestPayload,
   IReviewServiceRequestPayload,
+  IUpdateServiceRequestStatusInProgressPayload,
 } from "./service-request.interface";
 
 const createServiceRequest = async (
@@ -257,6 +258,83 @@ const assignServiceRequest = async (
   return result;
 };
 
+const updateServiceRequestInProgressStatus = async (
+  serviceRequestId: string,
+  officerId: string,
+  payload: IUpdateServiceRequestStatusInProgressPayload,
+) => {
+  // Check if service request is assigned to the officer
+  const serviceRequest = await prisma.serviceRequest.findFirst({
+    where: {
+      id: serviceRequestId,
+      deletedAt: null,
+      assignment: {
+        officerId,
+      },
+    },
+  });
+
+  // Throw an error if service request is not assigned to the officer
+  if (!serviceRequest) {
+    throw new Error("Service request not found or not assigned to you.");
+  }
+
+  // Check valid status transition
+  if (
+    serviceRequest.status === "ASSIGNED" &&
+    payload.status !== "IN_PROGRESS"
+  ) {
+    throw new Error(
+      "Assigned service requests can only be moved to in progress.",
+    );
+  }
+
+  if (
+    serviceRequest.status === "IN_PROGRESS" &&
+    payload.status !== "COMPLETED"
+  ) {
+    throw new Error("In-progress service requests can only be completed.");
+  }
+
+  // Throw an error for invalid current status
+  if (
+    serviceRequest.status !== "ASSIGNED" &&
+    serviceRequest.status !== "IN_PROGRESS"
+  ) {
+    throw new Error(
+      "This service request cannot be updated at its current status.",
+    );
+  }
+
+  // Update service request status
+  const updatedServiceRequest = await prisma.serviceRequest.update({
+    where: {
+      id: serviceRequestId,
+    },
+    data: {
+      status: payload.status,
+      completedAt: payload.status === "COMPLETED" ? new Date() : undefined,
+    },
+    include: {
+      service: true,
+      payment: true,
+      assignment: {
+        include: {
+          officer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return updateServiceRequestInProgressStatus;
+};
+
 export const serviceRequestService = {
   createServiceRequest,
   getAllServiceRequests,
@@ -264,4 +342,5 @@ export const serviceRequestService = {
   getServiceRequestById,
   UpdateServiceRequestStatus,
   assignServiceRequest,
+  updateServiceRequestInProgressStatus,
 };

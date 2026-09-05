@@ -28,3 +28,9 @@ export const assignServiceRequestSchema = z.object({
     officerId: z.string().uuid("Please provide a valid officer ID"),
   }),
 });
+
+export const updateServiceRequestStatusInProgressSchema = z.object({
+  body: z.object({
+    status: z.enum(["IN_PROGRESS", "COMPLETED"]),
+  }),
+});
