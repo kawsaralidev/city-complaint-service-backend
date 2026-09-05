@@ -35,7 +35,24 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
   });
 };
 
+const getMyPayments = async (req: Request, res: Response) => {
+  const citizenId = req.user?.userId;
+
+  if (!citizenId) {
+    throw new Error("Authenticated user not found.");
+  }
+
+  const payments = await paymentService.getMyPayments(citizenId);
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Payments retrieved successfully.",
+    data: payments,
+  });
+};
+
 export const paymentController = {
   createPayment,
   handleStripeWebhook,
+  getMyPayments,
 };

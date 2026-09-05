@@ -179,7 +179,28 @@ const handleStripeWebhook = async (signature: string, rawBody: Buffer) => {
   });
 };
 
+const getMyPayments = async (citizenId: string) => {
+  const payments = await prisma.payment.findMany({
+    where: {
+      citizenId,
+    },
+    include: {
+      serviceRequest: {
+        include: {
+          service: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return payments;
+};
+
 export const paymentService = {
   createPayment,
   handleStripeWebhook,
+  getMyPayments,
 };
