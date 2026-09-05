@@ -3,3 +3,7 @@ export interface ICreateServiceRequestPayload {
   description?: string;
   location: string;
 }
+
+export interface IReviewServiceRequestPayload {
+  status: "APPROVED" | "REJECTED";
+}

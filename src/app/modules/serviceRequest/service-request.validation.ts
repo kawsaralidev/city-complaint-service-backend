@@ -16,3 +16,9 @@ export const createServiceRequestSchema = z.object({
       .min(3, "Location must be at least 3 characters"),
   }),
 });
+
+export const reviewServiceRequestSchema = z.object({
+  body: z.object({
+    status: z.enum(["APPROVED", "REJECTED"]),
+  }),
+});

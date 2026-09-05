@@ -1,5 +1,8 @@
 import { prisma } from "../../lib/prisma";
-import { ICreateServiceRequestPayload } from "./service-request.interface";
+import {
+  ICreateServiceRequestPayload,
+  IReviewServiceRequestPayload,
+} from "./service-request.interface";
 
 const createServiceRequest = async (
   citizenId: string,
@@ -30,7 +33,7 @@ const createServiceRequest = async (
       description: payload.description,
       location: payload.location,
       amount: service.baseFee,
-      status: "PAYMENT_PENDING",
+      status: "PENDING",
     },
     include: {
       service: true,
@@ -103,9 +106,53 @@ const getServiceRequestById = async (id: string, citizenId: string) => {
   return serviceRequest;
 };
 
+const reviewServiceRequest = async (
+  id: string,
+  payload: IReviewServiceRequestPayload,
+) => {
+  const serviceRequest = await prisma.serviceRequest.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+    },
+  });
+
+  // Throw an error if service request does not exist
+  if (!serviceRequest) {
+    throw new Error("Service request not found.");
+  }
+
+  // Throw an error if request is not pending
+  if (serviceRequest.status !== "PENDING") {
+    throw new Error("Only pending service requests can be reviewed.");
+  }
+
+  const updatedServiceRequest = await prisma.serviceRequest.update({
+    where: {
+      id,
+    },
+    data: {
+      status: payload.status,
+    },
+    include: {
+      citizen: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      service: true,
+    },
+  });
+
+  return updatedServiceRequest;
+};
+
 export const serviceRequestService = {
   createServiceRequest,
   getAllServiceRequests,
   getMyServiceRequests,
   getServiceRequestById,
+  reviewServiceRequest,
 };

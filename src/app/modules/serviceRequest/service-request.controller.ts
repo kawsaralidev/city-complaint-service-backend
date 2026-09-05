@@ -69,9 +69,25 @@ const getServiceRequestById = async (req: Request, res: Response) => {
   });
 };
 
+const reviewServiceRequest = async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+
+  const serviceRequest = await serviceRequestService.reviewServiceRequest(
+    id,
+    req.body,
+  );
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: `Service request ${req.body.status.toLowerCase()} successfully.`,
+    data: serviceRequest,
+  });
+};
+
 export const serviceRequestController = {
   createServiceRequest,
   getAllServiceRequests,
   getMyServiceRequests,
   getServiceRequestById,
+  reviewServiceRequest,
 };

@@ -32,11 +32,14 @@ enum ComplaintStatus {
 }
 
 enum ServiceRequestStatus {
+  PENDING
+  APPROVED
   PAYMENT_PENDING
   CONFIRMED
   ASSIGNED
   IN_PROGRESS
   COMPLETED
+  REJECTED
   CANCELED
 }
 

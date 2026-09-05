@@ -9,7 +9,7 @@ model ServiceRequest {
 
   amount      Decimal  @db.Decimal(10, 2)
 
-  status      ServiceRequestStatus @default(PAYMENT_PENDING)
+  status      ServiceRequestStatus @default(PENDING)
 
   confirmedAt DateTime?
   assignedAt  DateTime?
