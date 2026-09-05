@@ -7,11 +7,15 @@ import { paymentController } from "./payment.controller";
 
 const router = Router();
 
+// Create payment
 router.post(
   "/create",
   auth(Role.CITIZEN),
   validateRequest(createPaymentSchema),
   paymentController.createPayment,
 );
+
+// Stripe webhook
+router.post("/webhook", paymentController.handleStripeWebhook);
 
 export const paymentRoutes = router;

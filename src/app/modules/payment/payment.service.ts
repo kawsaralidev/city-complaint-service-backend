@@ -30,10 +30,10 @@ const createPayment = async (
     throw new Error("Only approved service requests can proceed to payment.");
   }
 
-  // Throw an error if payment already exists
-  if (serviceRequest.payment) {
+  // Throw an error if payment is already completed
+  if (serviceRequest.payment?.status === "PAID") {
     throw new Error(
-      "Payment has already been initiated for this service request.",
+      "Payment has already been completed for this service request.",
     );
   }
 
@@ -65,7 +65,22 @@ const createPayment = async (
 
   // Save payment and update service request
   const payment = await prisma.$transaction(async (tx) => {
-    const createdPayment = await tx.payment.create({
+    if (serviceRequest.payment) {
+      // Update existing pending payment
+      return tx.payment.update({
+        where: {
+          id: serviceRequest.payment.id,
+        },
+        data: {
+          stripeSessionId: session.id,
+          status: "PENDING",
+          initiatedAt: new Date(),
+        },
+      });
+    }
+
+    // Create payment for the first time
+    return tx.payment.create({
       data: {
         serviceRequestId: serviceRequest.id,
         citizenId,
@@ -75,8 +90,11 @@ const createPayment = async (
         status: "PENDING",
       },
     });
+  });
 
-    await tx.serviceRequest.update({
+  // Update service request status
+  if (serviceRequest.status === "APPROVED") {
+    await prisma.serviceRequest.update({
       where: {
         id: serviceRequest.id,
       },
@@ -84,9 +102,7 @@ const createPayment = async (
         status: "PAYMENT_PENDING",
       },
     });
-
-    return createdPayment;
-  });
+  }
 
   return {
     payment,
@@ -94,6 +110,76 @@ const createPayment = async (
   };
 };
 
+// Handle Stripe webhook
+const handleStripeWebhook = async (signature: string, rawBody: Buffer) => {
+  // Verify Stripe webhook signature
+  const event = stripe.webhooks.constructEvent(
+    rawBody,
+    signature,
+    config.stripe_webhook_secret as string,
+  );
+
+  // Process successful Checkout Session
+  if (event.type !== "checkout.session.completed") {
+    return;
+  }
+
+  const session = event.data.object;
+
+  const serviceRequestId = session.metadata?.serviceRequestId;
+
+  // Throw an error if service request ID is missing
+  if (!serviceRequestId) {
+    throw new Error("Service request ID not found in Stripe metadata.");
+  }
+
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id;
+
+  // Update payment and service request
+  await prisma.$transaction(async (tx) => {
+    const payment = await tx.payment.findUnique({
+      where: {
+        stripeSessionId: session.id,
+      },
+    });
+
+    // Throw an error if payment does not exist
+    if (!payment) {
+      throw new Error("Payment not found.");
+    }
+
+    // Ignore duplicate webhook events
+    if (payment.status === "PAID") {
+      return;
+    }
+
+    await tx.payment.update({
+      where: {
+        id: payment.id,
+      },
+      data: {
+        status: "PAID",
+        stripePaymentId: paymentIntentId,
+        paidAt: new Date(),
+      },
+    });
+
+    await tx.serviceRequest.update({
+      where: {
+        id: serviceRequestId,
+      },
+      data: {
+        status: "CONFIRMED",
+        confirmedAt: new Date(),
+      },
+    });
+  });
+};
+
 export const paymentService = {
   createPayment,
+  handleStripeWebhook,
 };

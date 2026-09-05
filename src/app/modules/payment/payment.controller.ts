@@ -18,6 +18,24 @@ const createPayment = async (req: Request, res: Response) => {
   });
 };
 
+// Handle Stripe webhook
+const handleStripeWebhook = async (req: Request, res: Response) => {
+  const signature = req.headers["stripe-signature"];
+
+  if (!signature || Array.isArray(signature)) {
+    throw new Error("Stripe signature is missing.");
+  }
+
+  await paymentService.handleStripeWebhook(signature, req.body);
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Webhook processed successfully.",
+    data: null,
+  });
+};
+
 export const paymentController = {
   createPayment,
+  handleStripeWebhook,
 };
