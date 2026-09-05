@@ -69,10 +69,10 @@ const getServiceRequestById = async (req: Request, res: Response) => {
   });
 };
 
-const reviewServiceRequest = async (req: Request, res: Response) => {
+const UpdateServiceRequestStatus = async (req: Request, res: Response) => {
   const id = req.params.id as string;
 
-  const serviceRequest = await serviceRequestService.reviewServiceRequest(
+  const serviceRequest = await serviceRequestService.UpdateServiceRequestStatus(
     id,
     req.body,
   );
@@ -84,10 +84,34 @@ const reviewServiceRequest = async (req: Request, res: Response) => {
   });
 };
 
+// Assign service request to officer
+const assignServiceRequest = async (req: Request, res: Response) => {
+  const adminId = req.user?.userId;
+
+  if (!adminId) {
+    throw new Error("Authenticated user not found.");
+  }
+
+  const serviceRequestId = req.params.id as string;
+
+  const result = await serviceRequestService.assignServiceRequest(
+    serviceRequestId,
+    adminId,
+    req.body,
+  );
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Service request assigned successfully.",
+    data: result,
+  });
+};
+
 export const serviceRequestController = {
   createServiceRequest,
   getAllServiceRequests,
   getMyServiceRequests,
   getServiceRequestById,
-  reviewServiceRequest,
+  UpdateServiceRequestStatus,
+  assignServiceRequest,
 };

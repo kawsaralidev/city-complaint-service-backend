@@ -7,3 +7,7 @@ export interface ICreateServiceRequestPayload {
 export interface IReviewServiceRequestPayload {
   status: "APPROVED" | "REJECTED";
 }
+
+export interface IAssignServiceRequestPayload {
+  officerId: string;
+}

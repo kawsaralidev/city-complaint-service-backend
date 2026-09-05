@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import {
+  IAssignServiceRequestPayload,
   ICreateServiceRequestPayload,
   IReviewServiceRequestPayload,
 } from "./service-request.interface";
@@ -106,7 +107,7 @@ const getServiceRequestById = async (id: string, citizenId: string) => {
   return serviceRequest;
 };
 
-const reviewServiceRequest = async (
+const UpdateServiceRequestStatus = async (
   id: string,
   payload: IReviewServiceRequestPayload,
 ) => {
@@ -149,10 +150,118 @@ const reviewServiceRequest = async (
   return updatedServiceRequest;
 };
 
+const assignServiceRequest = async (
+  serviceRequestId: string,
+  adminId: string,
+  payload: IAssignServiceRequestPayload,
+) => {
+  // Check if service request exists
+  const serviceRequest = await prisma.serviceRequest.findFirst({
+    where: {
+      id: serviceRequestId,
+      deletedAt: null,
+    },
+    include: {
+      payment: true,
+    },
+  });
+
+  // Throw an error if service request does not exist
+  if (!serviceRequest) {
+    throw new Error("Service request not found.");
+  }
+
+  // Check if payment is completed
+  if (serviceRequest.status !== "CONFIRMED") {
+    throw new Error("Only confirmed service requests can be assigned.");
+  }
+
+  if (serviceRequest.payment?.status !== "PAID") {
+    throw new Error(
+      "Service request cannot be assigned before payment is completed.",
+    );
+  }
+
+  // Check if officer exists
+  const officer = await prisma.user.findFirst({
+    where: {
+      id: payload.officerId,
+      role: "OFFICER",
+      status: "ACTIVE",
+      deletedAt: null,
+    },
+  });
+
+  // Throw an error if officer does not exist
+  if (!officer) {
+    throw new Error("Active officer not found.");
+  }
+
+  // Check if service request is already assigned
+  const existingAssignment = await prisma.assignment.findUnique({
+    where: {
+      serviceRequestId,
+    },
+  });
+
+  if (existingAssignment) {
+    throw new Error("This service request has already been assigned.");
+  }
+
+  // Create assignment and update service request
+  const result = await prisma.$transaction(async (tx) => {
+    const assignment = await tx.assignment.create({
+      data: {
+        officerId: payload.officerId,
+        serviceRequestId,
+        assignedBy: adminId,
+      },
+      include: {
+        officer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assigner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    const updatedServiceRequest = await tx.serviceRequest.update({
+      where: {
+        id: serviceRequestId,
+      },
+      data: {
+        status: "ASSIGNED",
+        assignedAt: new Date(),
+      },
+      include: {
+        service: true,
+        payment: true,
+      },
+    });
+
+    return {
+      assignment,
+      serviceRequest: updatedServiceRequest,
+    };
+  });
+
+  return result;
+};
+
 export const serviceRequestService = {
   createServiceRequest,
   getAllServiceRequests,
   getMyServiceRequests,
   getServiceRequestById,
-  reviewServiceRequest,
+  UpdateServiceRequestStatus,
+  assignServiceRequest,
 };

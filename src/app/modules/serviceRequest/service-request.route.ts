@@ -3,6 +3,7 @@ import { auth } from "../../middleware/auth";
 import { Role } from "../../../../generated/prisma/enums";
 import { validateRequest } from "../../middleware/validateRequest";
 import {
+  assignServiceRequestSchema,
   createServiceRequestSchema,
   reviewServiceRequestSchema,
 } from "./service-request.validation";
@@ -36,10 +37,17 @@ router.get(
 );
 
 router.patch(
+  "/:id/assign",
+  auth(Role.ADMIN),
+  validateRequest(assignServiceRequestSchema),
+  serviceRequestController.assignServiceRequest,
+);
+
+router.patch(
   "/:id/service-request-status",
   auth(Role.ADMIN),
   validateRequest(reviewServiceRequestSchema),
-  serviceRequestController.reviewServiceRequest,
+  serviceRequestController.UpdateServiceRequestStatus,
 );
 
 export const serviceRequestRoutes = router;

@@ -22,3 +22,9 @@ export const reviewServiceRequestSchema = z.object({
     status: z.enum(["APPROVED", "REJECTED"]),
   }),
 });
+
+export const assignServiceRequestSchema = z.object({
+  body: z.object({
+    officerId: z.string().uuid("Please provide a valid officer ID"),
+  }),
+});
