@@ -40,6 +40,25 @@ const createServiceRequest = async (
   return serviceRequest;
 };
 
+const getMyServiceRequests = async (citizenId: string) => {
+  const serviceRequests = await prisma.serviceRequest.findMany({
+    where: {
+      citizenId,
+      deletedAt: null,
+    },
+    include: {
+      service: true,
+      payment: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return serviceRequests;
+};
+
 export const serviceRequestService = {
   createServiceRequest,
+  getMyServiceRequests,
 };

@@ -21,6 +21,24 @@ const createServiceRequest = async (req: Request, res: Response) => {
   });
 };
 
+const getMyServiceRequests = async (req: Request, res: Response) => {
+  const citizenId = req.user?.userId;
+
+  if (!citizenId) {
+    throw new Error("Authenticated user not found.");
+  }
+
+  const serviceRequests =
+    await serviceRequestService.getMyServiceRequests(citizenId);
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Service requests retrieved successfully.",
+    data: serviceRequests,
+  });
+};
+
 export const serviceRequestController = {
   createServiceRequest,
+  getMyServiceRequests,
 };
