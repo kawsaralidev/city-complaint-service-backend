@@ -72,8 +72,15 @@ const getServiceRequestById = async (req: Request, res: Response) => {
 const UpdateServiceRequestStatus = async (req: Request, res: Response) => {
   const id = req.params.id as string;
 
+  const adminId = req.user?.userId;
+
+  if (!adminId) {
+    throw new Error("Authenticated user not found.");
+  }
+
   const serviceRequest = await serviceRequestService.UpdateServiceRequestStatus(
     id,
+    adminId,
     req.body,
   );
 

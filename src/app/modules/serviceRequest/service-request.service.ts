@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { createAuditLog } from "../../utils/auditLog";
 import {
   IAssignServiceRequestPayload,
   ICreateServiceRequestPayload,
@@ -39,6 +40,18 @@ const createServiceRequest = async (
     },
     include: {
       service: true,
+    },
+  });
+
+  // Create audit log
+  await createAuditLog({
+    userId: citizenId,
+    action: "CREATE_SERVICE_REQUEST",
+    entity: "ServiceRequest",
+    entityId: serviceRequest.id,
+    details: {
+      serviceId: serviceRequest.serviceId,
+      amount: serviceRequest.amount.toString(),
     },
   });
 
@@ -110,6 +123,7 @@ const getServiceRequestById = async (id: string, citizenId: string) => {
 
 const UpdateServiceRequestStatus = async (
   id: string,
+  adminId: string,
   payload: IReviewServiceRequestPayload,
 ) => {
   const serviceRequest = await prisma.serviceRequest.findFirst({
@@ -145,6 +159,18 @@ const UpdateServiceRequestStatus = async (
         },
       },
       service: true,
+    },
+  });
+
+  // Create audit log
+  await createAuditLog({
+    userId: adminId,
+    action: "REVIEW_SERVICE_REQUEST",
+    entity: "ServiceRequest",
+    entityId: id,
+    details: {
+      previousStatus: serviceRequest.status,
+      newStatus: payload.status,
     },
   });
 
@@ -255,6 +281,17 @@ const assignServiceRequest = async (
     };
   });
 
+  // Create audit log
+  await createAuditLog({
+    userId: adminId,
+    action: "ASSIGN_SERVICE_REQUEST",
+    entity: "ServiceRequest",
+    entityId: serviceRequestId,
+    details: {
+      officerId: payload.officerId,
+    },
+  });
+
   return result;
 };
 
@@ -332,7 +369,19 @@ const updateServiceRequestInProgressStatus = async (
     },
   });
 
-  return updateServiceRequestInProgressStatus;
+  // Create audit log
+  await createAuditLog({
+    userId: officerId,
+    action: "UPDATE_SERVICE_REQUEST_STATUS",
+    entity: "ServiceRequest",
+    entityId: serviceRequestId,
+    details: {
+      previousStatus: serviceRequest.status,
+      newStatus: payload.status,
+    },
+  });
+
+  return updatedServiceRequest;
 };
 
 export const serviceRequestService = {

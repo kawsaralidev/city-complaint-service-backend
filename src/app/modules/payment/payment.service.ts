@@ -1,6 +1,7 @@
 import config from "../../config";
 import { prisma } from "../../lib/prisma";
 import stripe from "../../lib/stripe";
+import { createAuditLog } from "../../utils/auditLog";
 import { ICreatePaymentPayload } from "./payment.interface";
 
 const createPayment = async (
@@ -104,6 +105,19 @@ const createPayment = async (
     });
   }
 
+  // Create audit log
+  await createAuditLog({
+    userId: citizenId,
+    action: "CREATE_PAYMENT",
+    entity: "Payment",
+    entityId: payment.id,
+    details: {
+      serviceRequestId: serviceRequest.id,
+      amount: payment.amount.toString(),
+      currency: payment.currency,
+    },
+  });
+
   return {
     payment,
     checkoutUrl: session.url,
@@ -138,6 +152,9 @@ const handleStripeWebhook = async (signature: string, rawBody: Buffer) => {
       ? session.payment_intent
       : session.payment_intent?.id;
 
+  let completedPaymentId: string | null = null;
+  let completedCitizenId: string | null = null;
+
   // Update payment and service request
   await prisma.$transaction(async (tx) => {
     const payment = await tx.payment.findUnique({
@@ -167,6 +184,10 @@ const handleStripeWebhook = async (signature: string, rawBody: Buffer) => {
       },
     });
 
+    // Store payment and citizen IDs for audit log
+    completedPaymentId = payment.id;
+    completedCitizenId = payment.citizenId;
+
     await tx.serviceRequest.update({
       where: {
         id: serviceRequestId,
@@ -177,6 +198,21 @@ const handleStripeWebhook = async (signature: string, rawBody: Buffer) => {
       },
     });
   });
+
+  // Create audit log
+  if (completedPaymentId && completedCitizenId) {
+    await createAuditLog({
+      userId: completedCitizenId,
+      action: "PAYMENT_COMPLETED",
+      entity: "Payment",
+      entityId: completedPaymentId,
+      details: {
+        stripeSessionId: session.id,
+        stripePaymentId: paymentIntentId,
+        serviceRequestId,
+      },
+    });
+  }
 };
 
 const getAllPayments = async () => {

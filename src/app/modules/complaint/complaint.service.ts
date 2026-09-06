@@ -1,5 +1,6 @@
 import { ComplaintStatus, Role } from "../../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
+import { createAuditLog } from "../../utils/auditLog";
 import { deleteFromCloudinary } from "../../utils/cloudinary";
 
 // Create Complaint
@@ -49,6 +50,18 @@ const createComplaint = async (
     },
     include: {
       category: true,
+    },
+  });
+
+  // Create audit log
+  await createAuditLog({
+    userId: citizenId,
+    action: "CREATE_COMPLAINT",
+    entity: "Complaint",
+    entityId: complaint.id,
+    details: {
+      title: complaint.title,
+      categoryId: complaint.categoryId,
     },
   });
 
@@ -348,6 +361,17 @@ const assignComplaint = async (
     };
   });
 
+  // Create audit log
+  await createAuditLog({
+    userId: assignedBy,
+    action: "ASSIGN_COMPLAINT",
+    entity: "Complaint",
+    entityId: complaintId,
+    details: {
+      officerId,
+    },
+  });
+
   return result;
 };
 
@@ -469,6 +493,18 @@ const updateComplaintStatus = async (
     },
   });
 
+  // Create audit log
+  await createAuditLog({
+    userId,
+    action: "UPDATE_COMPLAINT_STATUS",
+    entity: "Complaint",
+    entityId: complaintId,
+    details: {
+      previousStatus: complaint.status,
+      newStatus,
+    },
+  });
+
   return updatedComplaint;
 };
 
@@ -562,6 +598,17 @@ const createComplaintResolution = async (
       resolution,
       complaint: updatedComplaint,
     };
+  });
+
+  // Create audit log
+  await createAuditLog({
+    userId: officerId,
+    action: "CREATE_COMPLAINT_RESOLUTION",
+    entity: "Complaint",
+    entityId: complaintId,
+    details: {
+      resolutionId: result.resolution.id,
+    },
   });
 
   return result;
