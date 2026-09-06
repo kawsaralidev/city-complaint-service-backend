@@ -16,12 +16,9 @@ export const validateRequest = (zodSchema: z.ZodObject) => {
     // Validate request data using the provided Zod schema
     const result = zodSchema.safeParse(payload);
 
-    // Throw validation error if request data is invalid
+    // Throw Zod validation error if request data is invalid
     if (!result.success) {
-      console.log(result.error);
-      console.log(result.error.issues);
-
-      throw new Error(result.error.issues[0].message);
+      throw result.error;
     }
 
     // Update request body with validated data

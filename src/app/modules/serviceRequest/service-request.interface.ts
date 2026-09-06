@@ -1,3 +1,5 @@
+import { ServiceRequestStatus } from "../../../../generated/prisma/enums";
+
 export interface ICreateServiceRequestPayload {
   serviceId: string;
   description?: string;
@@ -16,4 +18,13 @@ export interface IAssignServiceRequestPayload {
 
 export interface IUpdateServiceRequestStatusInProgressPayload {
   status: "IN_PROGRESS" | "COMPLETED";
+}
+
+export interface IGetAllServiceRequestsParams {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: ServiceRequestStatus;
+  serviceId?: string;
+  sortOrder: "asc" | "desc";
 }

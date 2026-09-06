@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { IGetServicesParams } from "./service.interface";
 
 const createService = async (data: {
   name: string;
@@ -28,17 +29,74 @@ const createService = async (data: {
   return service;
 };
 
-const getActiveServices = async () => {
-  const services = await prisma.service.findMany({
-    where: {
-      isActive: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+const getActiveServices = async ({
+  page,
+  limit,
+  search,
+  minFee,
+  maxFee,
+  sortOrder,
+}: IGetServicesParams) => {
+  const skip = (page - 1) * limit;
 
-  return services;
+  // Build service filters
+  const where = {
+    isActive: true,
+
+    ...(search && {
+      OR: [
+        {
+          name: {
+            contains: search,
+            mode: "insensitive" as const,
+          },
+        },
+        {
+          description: {
+            contains: search,
+            mode: "insensitive" as const,
+          },
+        },
+      ],
+    }),
+
+    ...((minFee !== undefined || maxFee !== undefined) && {
+      baseFee: {
+        ...(minFee !== undefined && {
+          gte: minFee,
+        }),
+        ...(maxFee !== undefined && {
+          lte: maxFee,
+        }),
+      },
+    }),
+  };
+
+  // Get services and total count
+  const [services, total] = await Promise.all([
+    prisma.service.findMany({
+      where,
+      orderBy: {
+        createdAt: sortOrder,
+      },
+      skip,
+      take: limit,
+    }),
+
+    prisma.service.count({
+      where,
+    }),
+  ]);
+
+  return {
+    data: services,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 const updateService = async (

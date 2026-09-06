@@ -5,6 +5,7 @@ import { validateRequest } from "../../middleware/validateRequest";
 import {
   assignServiceRequestSchema,
   createServiceRequestSchema,
+  getAllServiceRequestsQuerySchema,
   reviewServiceRequestSchema,
   updateServiceRequestStatusInProgressSchema,
 } from "./service-request.validation";
@@ -24,6 +25,7 @@ router.post(
 router.get(
   "/",
   auth(Role.ADMIN),
+  validateRequest(getAllServiceRequestsQuerySchema),
   serviceRequestController.getAllServiceRequests,
 );
 

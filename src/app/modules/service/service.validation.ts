@@ -54,3 +54,17 @@ export const updateServiceSchema = z.object({
       },
     ),
 });
+
+export const getServicesQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+
+  limit: z.coerce.number().int().min(1).max(100).default(15),
+
+  search: z.string().trim().optional(),
+
+  minFee: z.coerce.number().min(0).optional(),
+
+  maxFee: z.coerce.number().min(0).optional(),
+
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+});

@@ -262,6 +262,17 @@ const updateComplaint = async (
     },
   });
 
+  // Create audit log
+  await createAuditLog({
+    userId: citizenId,
+    action: "UPDATE_COMPLAINT",
+    entity: "Complaint",
+    entityId: updatedComplaint.id,
+    details: {
+      updatedFields: Object.keys(data),
+    },
+  });
+
   // Delete old image from Cloudinary if a new image was uploaded
   if (data.imagePublicId && oldImagePublicId) {
     await deleteFromCloudinary(oldImagePublicId);

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { serviceService } from "./service.service";
+import { getServicesQuerySchema } from "./service.validation";
 
 const createService = async (req: Request, res: Response) => {
   const service = await serviceService.createService(req.body);
@@ -13,7 +14,16 @@ const createService = async (req: Request, res: Response) => {
 };
 
 const getActiveServices = async (req: Request, res: Response) => {
-  const services = await serviceService.getActiveServices();
+  const query = getServicesQuerySchema.parse(req.query);
+
+  const services = await serviceService.getActiveServices({
+    page: query.page,
+    limit: query.limit,
+    search: query.search,
+    minFee: query.minFee,
+    maxFee: query.maxFee,
+    sortOrder: query.sortOrder,
+  });
 
   res.status(HttpStatus.OK).json({
     success: true,

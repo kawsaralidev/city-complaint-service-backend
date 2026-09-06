@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { serviceRequestService } from "./service-request.service";
+import { getAllServiceRequestsQuerySchema } from "./service-request.validation";
 
 const createServiceRequest = async (req: Request, res: Response) => {
   const citizenId = req.user?.userId;
@@ -22,8 +23,17 @@ const createServiceRequest = async (req: Request, res: Response) => {
   });
 };
 
-const getAllServiceRequests = async (_req: Request, res: Response) => {
-  const serviceRequests = await serviceRequestService.getAllServiceRequests();
+const getAllServiceRequests = async (req: Request, res: Response) => {
+  const query = getAllServiceRequestsQuerySchema.parse(req.query);
+
+  const serviceRequests = await serviceRequestService.getAllServiceRequests({
+    page: query.page,
+    limit: query.limit,
+    search: query.search,
+    status: query.status,
+    serviceId: query.serviceId,
+    sortOrder: query.sortOrder,
+  });
 
   res.status(HttpStatus.OK).json({
     success: true,

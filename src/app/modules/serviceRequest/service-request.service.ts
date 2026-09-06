@@ -4,6 +4,7 @@ import { uploadToCloudinary } from "../../utils/cloudinary";
 import {
   IAssignServiceRequestPayload,
   ICreateServiceRequestPayload,
+  IGetAllServiceRequestsParams,
   IReviewServiceRequestPayload,
   IUpdateServiceRequestStatusInProgressPayload,
 } from "./service-request.interface";
@@ -76,28 +77,104 @@ const createServiceRequest = async (
   return serviceRequest;
 };
 
-const getAllServiceRequests = async () => {
-  const serviceRequests = await prisma.serviceRequest.findMany({
-    where: {
-      deletedAt: null,
-    },
-    include: {
-      citizen: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      service: true,
-      payment: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+const getAllServiceRequests = async ({
+  page,
+  limit,
+  search,
+  status,
+  serviceId,
+  sortOrder,
+}: IGetAllServiceRequestsParams) => {
+  const skip = (page - 1) * limit;
 
-  return serviceRequests;
+  const where = {
+    deletedAt: null,
+
+    ...(status && {
+      status,
+    }),
+
+    ...(serviceId && {
+      serviceId,
+    }),
+
+    ...(search && {
+      OR: [
+        {
+          location: {
+            contains: search,
+            mode: "insensitive" as const,
+          },
+        },
+        {
+          description: {
+            contains: search,
+            mode: "insensitive" as const,
+          },
+        },
+        {
+          citizen: {
+            name: {
+              contains: search,
+              mode: "insensitive" as const,
+            },
+          },
+        },
+        {
+          citizen: {
+            email: {
+              contains: search,
+              mode: "insensitive" as const,
+            },
+          },
+        },
+        {
+          service: {
+            name: {
+              contains: search,
+              mode: "insensitive" as const,
+            },
+          },
+        },
+      ],
+    }),
+  };
+
+  const [serviceRequests, total] = await Promise.all([
+    prisma.serviceRequest.findMany({
+      where,
+      include: {
+        citizen: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        service: true,
+        payment: true,
+      },
+      orderBy: {
+        createdAt: sortOrder,
+      },
+      skip,
+      take: limit,
+    }),
+
+    prisma.serviceRequest.count({
+      where,
+    }),
+  ]);
+
+  return {
+    data: serviceRequests,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 const getMyServiceRequests = async (citizenId: string) => {
