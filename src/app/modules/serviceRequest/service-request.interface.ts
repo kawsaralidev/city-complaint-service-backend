@@ -2,6 +2,8 @@ export interface ICreateServiceRequestPayload {
   serviceId: string;
   description?: string;
   location: string;
+  imageUrl?: string;
+  imagePublicId?: string;
 }
 
 export interface IReviewServiceRequestPayload {

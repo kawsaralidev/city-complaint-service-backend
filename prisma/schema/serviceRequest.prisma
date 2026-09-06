@@ -6,6 +6,8 @@ model ServiceRequest {
 
   description String?
   location    String
+  imageUrl      String?
+  imagePublicId String?
 
   amount      Decimal  @db.Decimal(10, 2)
 

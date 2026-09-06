@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { createAuditLog } from "../../utils/auditLog";
+import { uploadToCloudinary } from "../../utils/cloudinary";
 import {
   IAssignServiceRequestPayload,
   ICreateServiceRequestPayload,
@@ -10,6 +11,7 @@ import {
 const createServiceRequest = async (
   citizenId: string,
   payload: ICreateServiceRequestPayload,
+  image?: Express.Multer.File,
 ) => {
   // Check if service exists
   const service = await prisma.service.findUnique({
@@ -28,6 +30,20 @@ const createServiceRequest = async (
     throw new Error("This service is currently inactive.");
   }
 
+  let imageUrl: string | undefined;
+  let imagePublicId: string | undefined;
+
+  // Upload image to Cloudinary if provided
+  if (image) {
+    const uploadedImage = await uploadToCloudinary(
+      image.buffer,
+      "city-complaints/service-requests",
+    );
+
+    imageUrl = uploadedImage.secure_url;
+    imagePublicId = uploadedImage.public_id;
+  }
+
   // Create service request
   const serviceRequest = await prisma.serviceRequest.create({
     data: {
@@ -35,6 +51,8 @@ const createServiceRequest = async (
       serviceId: payload.serviceId,
       description: payload.description,
       location: payload.location,
+      imageUrl,
+      imagePublicId,
       amount: service.baseFee,
       status: "PENDING",
     },

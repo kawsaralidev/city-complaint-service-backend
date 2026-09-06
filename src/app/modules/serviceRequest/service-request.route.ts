@@ -9,12 +9,14 @@ import {
   updateServiceRequestStatusInProgressSchema,
 } from "./service-request.validation";
 import { serviceRequestController } from "./service-request.controller";
+import { upload } from "../../lib/multer";
 
 const router = Router();
 
 router.post(
   "/",
   auth(Role.CITIZEN),
+  upload.single("image"),
   validateRequest(createServiceRequestSchema),
   serviceRequestController.createServiceRequest,
 );

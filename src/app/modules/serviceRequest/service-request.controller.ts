@@ -12,6 +12,7 @@ const createServiceRequest = async (req: Request, res: Response) => {
   const serviceRequest = await serviceRequestService.createServiceRequest(
     citizenId,
     req.body,
+    req.file,
   );
 
   res.status(HttpStatus.CREATED).json({
