@@ -625,6 +625,50 @@ const createComplaintResolution = async (
   return result;
 };
 
+// Delete Complaint
+const deleteComplaint = async (complaintId: string, citizenId: string) => {
+  // Check if complaint exists
+  const complaint = await prisma.complaint.findFirst({
+    where: {
+      id: complaintId,
+      citizenId,
+      deletedAt: null,
+    },
+  });
+
+  if (!complaint) {
+    throw new Error("Complaint not found.");
+  }
+
+  // Check complaint status
+  if (complaint.status !== ComplaintStatus.PENDING) {
+    throw new Error("Only pending complaints can be deleted.");
+  }
+
+  // Soft delete complaint
+  const deletedComplaint = await prisma.complaint.update({
+    where: {
+      id: complaintId,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
+  });
+
+  // Create audit log
+  await createAuditLog({
+    userId: citizenId,
+    action: "DELETE_COMPLAINT",
+    entity: "Complaint",
+    entityId: deletedComplaint.id,
+    details: {
+      softDeleted: true,
+    },
+  });
+
+  return deletedComplaint;
+};
+
 export const complaintService = {
   createComplaint,
   getMyComplaints,
@@ -635,4 +679,5 @@ export const complaintService = {
   getAssignedComplaints,
   updateComplaintStatus,
   createComplaintResolution,
+  deleteComplaint,
 };

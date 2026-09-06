@@ -62,4 +62,10 @@ router.patch(
   serviceRequestController.updateServiceRequestInProgressStatus,
 );
 
+router.delete(
+  "/:id",
+  auth(Role.CITIZEN),
+  serviceRequestController.deleteServiceRequest,
+);
+
 export const serviceRequestRoutes = router;

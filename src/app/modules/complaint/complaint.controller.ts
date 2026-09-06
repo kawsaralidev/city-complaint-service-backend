@@ -239,6 +239,23 @@ const createComplaintResolution = async (req: Request, res: Response) => {
   });
 };
 
+// Delete Complaint
+const deleteComplaint = async (req: Request, res: Response) => {
+  const complaintId = req.params.id as string;
+  const citizenId = req.user?.userId;
+
+  const complaint = await complaintService.deleteComplaint(
+    complaintId,
+    citizenId as string,
+  );
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Complaint deleted successfully.",
+    data: complaint,
+  });
+};
+
 export const complaintController = {
   createComplaint,
   getMyComplaints,
@@ -249,4 +266,5 @@ export const complaintController = {
   getAssignedComplaints,
   updateComplaintStatus,
   createComplaintResolution,
+  deleteComplaint,
 };

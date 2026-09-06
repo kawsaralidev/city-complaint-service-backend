@@ -151,6 +151,23 @@ const updateServiceRequestInProgressStatus = async (
   });
 };
 
+// Delete Service Request
+const deleteServiceRequest = async (req: Request, res: Response) => {
+  const serviceRequestId = req.params.id as string;
+  const citizenId = req.user!.userId;
+
+  const serviceRequest = await serviceRequestService.deleteServiceRequest(
+    serviceRequestId,
+    citizenId,
+  );
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Service request deleted successfully.",
+    data: serviceRequest,
+  });
+};
+
 export const serviceRequestController = {
   createServiceRequest,
   getAllServiceRequests,
@@ -159,4 +176,5 @@ export const serviceRequestController = {
   UpdateServiceRequestStatus,
   assignServiceRequest,
   updateServiceRequestInProgressStatus,
+  deleteServiceRequest,
 };

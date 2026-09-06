@@ -75,4 +75,6 @@ router.post(
   complaintController.createComplaintResolution,
 );
 
+router.delete("/:id", auth(Role.CITIZEN), complaintController.deleteComplaint);
+
 export const complaintRoutes = router;

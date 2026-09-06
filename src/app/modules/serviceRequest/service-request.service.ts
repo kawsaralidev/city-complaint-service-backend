@@ -1,3 +1,4 @@
+import { ServiceRequestStatus } from "../../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { createAuditLog } from "../../utils/auditLog";
 import { uploadToCloudinary } from "../../utils/cloudinary";
@@ -479,6 +480,53 @@ const updateServiceRequestInProgressStatus = async (
   return updatedServiceRequest;
 };
 
+// Delete Service Request
+const deleteServiceRequest = async (
+  serviceRequestId: string,
+  citizenId: string,
+) => {
+  // Check if service request exists
+  const serviceRequest = await prisma.serviceRequest.findFirst({
+    where: {
+      id: serviceRequestId,
+      citizenId,
+      deletedAt: null,
+    },
+  });
+
+  if (!serviceRequest) {
+    throw new Error("Service request not found.");
+  }
+
+  // Check service request status
+  if (serviceRequest.status !== ServiceRequestStatus.PENDING) {
+    throw new Error("Only pending service requests can be deleted.");
+  }
+
+  // Soft delete service request
+  const deletedServiceRequest = await prisma.serviceRequest.update({
+    where: {
+      id: serviceRequestId,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
+  });
+
+  // Create audit log
+  await createAuditLog({
+    userId: citizenId,
+    action: "DELETE_SERVICE_REQUEST",
+    entity: "ServiceRequest",
+    entityId: deletedServiceRequest.id,
+    details: {
+      softDeleted: true,
+    },
+  });
+
+  return deletedServiceRequest;
+};
+
 export const serviceRequestService = {
   createServiceRequest,
   getAllServiceRequests,
@@ -487,4 +535,5 @@ export const serviceRequestService = {
   UpdateServiceRequestStatus,
   assignServiceRequest,
   updateServiceRequestInProgressStatus,
+  deleteServiceRequest,
 };
