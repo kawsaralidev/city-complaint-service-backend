@@ -17,6 +17,7 @@ import { serviceRequestRoutes } from "./app/modules/serviceRequest/service-reque
 import config from "./app/config";
 import { paymentRoutes } from "./app/modules/payment/payment.route";
 import helmet from "helmet";
+import { generalRateLimiter } from "./app/middleware/rateLimit";
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use(
 );
 
 app.use(helmet());
+app.use(generalRateLimiter);
 app.use(express.json());
 app.use(cookieParser());
 

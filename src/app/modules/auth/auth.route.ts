@@ -10,24 +10,36 @@ import {
 import { auth } from "../../middleware/auth";
 
 import passport from "../../config/passport";
+import { authRateLimiter } from "../../middleware/rateLimit";
 
 const router = Router();
 
 router.post(
   "/register",
+  authRateLimiter,
   validateRequest(registerSchema),
   authController.register,
 );
 
 router.post(
   "/verify-register-email",
+  authRateLimiter,
   validateRequest(verifyRegistrationSchema),
   authController.verifyRegisterEmail,
 );
 
-router.post("/login", validateRequest(loginSchema), authController.login);
+router.post(
+  "/login",
+  authRateLimiter,
+  validateRequest(loginSchema),
+  authController.login,
+);
 
-router.post("/refresh-token", authController.refreshAccessToken);
+router.post(
+  "/refresh-token",
+  authRateLimiter,
+  authController.refreshAccessToken,
+);
 
 router.get("/me", auth(), authController.getCurrentUser);
 
