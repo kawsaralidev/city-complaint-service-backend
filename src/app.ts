@@ -16,6 +16,7 @@ import { serviceRoutes } from "./app/modules/service/service.routes";
 import { serviceRequestRoutes } from "./app/modules/serviceRequest/service-request.route";
 import config from "./app/config";
 import { paymentRoutes } from "./app/modules/payment/payment.route";
+import helmet from "helmet";
 
 const app = express();
 
@@ -27,6 +28,8 @@ app.use(
     credentials: true,
   }),
 );
+
+app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 
