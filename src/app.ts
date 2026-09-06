@@ -19,6 +19,7 @@ import { paymentRoutes } from "./app/modules/payment/payment.route";
 import helmet from "helmet";
 import { generalRateLimiter } from "./app/middleware/rateLimit";
 import { auditLogRoutes } from "./app/modules/auditLog/audit-log.route";
+import { userRoutes } from "./app/modules/user/user.routes";
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use(passport.initialize());
 
 // routes
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/categories", categoryRoutes);
 app.use("/api/v1/complaints", complaintRoutes);
 app.use("/api/v1/services", serviceRoutes);
