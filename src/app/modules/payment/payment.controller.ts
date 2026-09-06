@@ -35,6 +35,16 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
   });
 };
 
+const getAllPayments = async (_req: Request, res: Response) => {
+  const payments = await paymentService.getAllPayments();
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: "Payments retrieved successfully.",
+    data: payments,
+  });
+};
+
 const getMyPayments = async (req: Request, res: Response) => {
   const citizenId = req.user?.userId;
 
@@ -54,5 +64,6 @@ const getMyPayments = async (req: Request, res: Response) => {
 export const paymentController = {
   createPayment,
   handleStripeWebhook,
+  getAllPayments,
   getMyPayments,
 };
