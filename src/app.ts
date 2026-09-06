@@ -18,6 +18,7 @@ import config from "./app/config";
 import { paymentRoutes } from "./app/modules/payment/payment.route";
 import helmet from "helmet";
 import { generalRateLimiter } from "./app/middleware/rateLimit";
+import { auditLogRoutes } from "./app/modules/auditLog/audit-log.route";
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use("/api/v1/complaints", complaintRoutes);
 app.use("/api/v1/services", serviceRoutes);
 app.use("/api/v1/service-requests", serviceRequestRoutes);
 app.use("/api/v1/payments", paymentRoutes);
+app.use("/api/v1/audit-logs", auditLogRoutes);
 
 // 404
 app.use(notFound);
