@@ -1,8 +1,8 @@
 import "dotenv/config";
 import express, {
-	type NextFunction,
-	type Request,
-	type Response,
+  type NextFunction,
+  type Request,
+  type Response,
 } from "express";
 import cors from "cors";
 import { notFound } from "./app/middleware/notFound";
@@ -27,10 +27,10 @@ const app = express();
 app.use("/api/v1/payments/webhook", express.raw({ type: "application/json" }));
 
 app.use(
-	cors({
-		origin: config.app_url,
-		credentials: true,
-	}),
+  cors({
+    origin: config.app_url,
+    credentials: true,
+  }),
 );
 
 app.use(helmet());
@@ -52,32 +52,32 @@ app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/audit-logs", auditLogRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 
+// Basic route
+app.get("/", async (req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: "City Complaint & Service Platform API is running",
+    data: null,
+  });
+});
+
+app.get("/test", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "Welcome to City Complaint and Service Backend",
+      data: null,
+    });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
 // 404
 app.use(notFound);
 
 // Global Error Handler
 app.use(globalErrorHandler);
-
-// Basic route
-app.get("/", async (req: Request, res: Response) => {
-	res.status(200).json({
-		success: true,
-		message: "City Complaint & Service Platform API is running",
-		data: null,
-	});
-});
-
-app.get("/test", async (req: Request, res: Response, next: NextFunction) => {
-	try {
-		res.status(200).json({
-			success: true,
-			message: "Welcome to City Complaint and Service Backend",
-			data: null,
-		});
-	} catch (error) {
-		console.log(error);
-		next(error);
-	}
-});
 
 export default app;
