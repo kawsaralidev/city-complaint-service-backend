@@ -4,10 +4,10 @@ import multer from "multer";
 const storage = multer.memoryStorage();
 
 export const upload = multer({
-  storage,
+	storage,
 
-  // Maximum image size: 1 MB
-  limits: {
-    fileSize: 1 * 1024 * 1024,
-  },
+	// Maximum image size: 1 MB
+	limits: {
+		fileSize: 1 * 1024 * 1024,
+	},
 });

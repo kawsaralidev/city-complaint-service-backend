@@ -1,10 +1,10 @@
 export interface IRegisterPayload {
-  name: string;
-  email: string;
-  password: string;
+	name: string;
+	email: string;
+	password: string;
 }
 
 export interface IVerifyEmailPayload {
-  email: string;
-  otp: string;
+	email: string;
+	otp: string;
 }

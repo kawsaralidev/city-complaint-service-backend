@@ -8,23 +8,23 @@ import { serviceController } from "./service.controller";
 const router = Router();
 
 router.post(
-  "/",
-  auth(Role.ADMIN),
-  validateRequest(createServiceSchema),
-  serviceController.createService,
+	"/",
+	auth(Role.ADMIN),
+	validateRequest(createServiceSchema),
+	serviceController.createService,
 );
 
 router.get(
-  "/",
-  auth(Role.CITIZEN, Role.OFFICER, Role.ADMIN),
-  serviceController.getActiveServices,
+	"/",
+	auth(Role.CITIZEN, Role.OFFICER, Role.ADMIN),
+	serviceController.getActiveServices,
 );
 
 router.patch(
-  "/:id",
-  auth(Role.ADMIN),
-  validateRequest(updateServiceSchema),
-  serviceController.updateService,
+	"/:id",
+	auth(Role.ADMIN),
+	validateRequest(updateServiceSchema),
+	serviceController.updateService,
 );
 
 export const serviceRoutes = router;

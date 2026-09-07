@@ -1,69 +1,69 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { paymentService } from "./payment.service";
 import { HttpStatus } from "../../../constants/httpStatus";
 
 const createPayment = async (req: Request, res: Response) => {
-  const citizenId = req.user?.userId;
+	const citizenId = req.user?.userId;
 
-  if (!citizenId) {
-    throw new Error("Authenticated user not found.");
-  }
+	if (!citizenId) {
+		throw new Error("Authenticated user not found.");
+	}
 
-  const payment = await paymentService.createPayment(citizenId, req.body);
+	const payment = await paymentService.createPayment(citizenId, req.body);
 
-  res.status(HttpStatus.CREATED).json({
-    success: true,
-    message: "Payment session created successfully.",
-    data: payment,
-  });
+	res.status(HttpStatus.CREATED).json({
+		success: true,
+		message: "Payment session created successfully.",
+		data: payment,
+	});
 };
 
 // Handle Stripe webhook
 const handleStripeWebhook = async (req: Request, res: Response) => {
-  const signature = req.headers["stripe-signature"];
+	const signature = req.headers["stripe-signature"];
 
-  if (!signature || Array.isArray(signature)) {
-    throw new Error("Stripe signature is missing.");
-  }
+	if (!signature || Array.isArray(signature)) {
+		throw new Error("Stripe signature is missing.");
+	}
 
-  await paymentService.handleStripeWebhook(signature, req.body);
+	await paymentService.handleStripeWebhook(signature, req.body);
 
-  res.status(HttpStatus.OK).json({
-    success: true,
-    message: "Webhook processed successfully.",
-    data: null,
-  });
+	res.status(HttpStatus.OK).json({
+		success: true,
+		message: "Webhook processed successfully.",
+		data: null,
+	});
 };
 
 const getAllPayments = async (_req: Request, res: Response) => {
-  const payments = await paymentService.getAllPayments();
+	const payments = await paymentService.getAllPayments();
 
-  res.status(HttpStatus.OK).json({
-    success: true,
-    message: "Payments retrieved successfully.",
-    data: payments,
-  });
+	res.status(HttpStatus.OK).json({
+		success: true,
+		message: "Payments retrieved successfully.",
+		data: payments,
+	});
 };
 
 const getMyPayments = async (req: Request, res: Response) => {
-  const citizenId = req.user?.userId;
+	const citizenId = req.user?.userId;
 
-  if (!citizenId) {
-    throw new Error("Authenticated user not found.");
-  }
+	if (!citizenId) {
+		throw new Error("Authenticated user not found.");
+	}
 
-  const payments = await paymentService.getMyPayments(citizenId);
+	const payments = await paymentService.getMyPayments(citizenId);
 
-  res.status(HttpStatus.OK).json({
-    success: true,
-    message: "Payments retrieved successfully.",
-    data: payments,
-  });
+	res.status(HttpStatus.OK).json({
+		success: true,
+		message: "Payments retrieved successfully.",
+		data: payments,
+	});
 };
 
 export const paymentController = {
-  createPayment,
-  handleStripeWebhook,
-  getAllPayments,
-  getMyPayments,
+	createPayment,
+	handleStripeWebhook,
+	getAllPayments,
+	getMyPayments,
 };

@@ -2,266 +2,266 @@ import config from "../../config";
 import { prisma } from "../../lib/prisma";
 import stripe from "../../lib/stripe";
 import { createAuditLog } from "../../utils/auditLog";
-import { ICreatePaymentPayload } from "./payment.interface";
+import type { ICreatePaymentPayload } from "./payment.interface";
 
 const createPayment = async (
-  citizenId: string,
-  payload: ICreatePaymentPayload,
+	citizenId: string,
+	payload: ICreatePaymentPayload,
 ) => {
-  // Check if service request exists
-  const serviceRequest = await prisma.serviceRequest.findFirst({
-    where: {
-      id: payload.serviceRequestId,
-      citizenId,
-      deletedAt: null,
-    },
-    include: {
-      service: true,
-      payment: true,
-    },
-  });
+	// Check if service request exists
+	const serviceRequest = await prisma.serviceRequest.findFirst({
+		where: {
+			id: payload.serviceRequestId,
+			citizenId,
+			deletedAt: null,
+		},
+		include: {
+			service: true,
+			payment: true,
+		},
+	});
 
-  // Throw an error if service request does not exist
-  if (!serviceRequest) {
-    throw new Error("Service request not found.");
-  }
+	// Throw an error if service request does not exist
+	if (!serviceRequest) {
+		throw new Error("Service request not found.");
+	}
 
-  // Check if service request is approved
-  if (serviceRequest.status !== "APPROVED") {
-    throw new Error("Only approved service requests can proceed to payment.");
-  }
+	// Check if service request is approved
+	if (serviceRequest.status !== "APPROVED") {
+		throw new Error("Only approved service requests can proceed to payment.");
+	}
 
-  // Throw an error if payment is already completed
-  if (serviceRequest.payment?.status === "PAID") {
-    throw new Error(
-      "Payment has already been completed for this service request.",
-    );
-  }
+	// Throw an error if payment is already completed
+	if (serviceRequest.payment?.status === "PAID") {
+		throw new Error(
+			"Payment has already been completed for this service request.",
+		);
+	}
 
-  const amount = Number(serviceRequest.amount);
+	const amount = Number(serviceRequest.amount);
 
-  // Create Stripe Checkout Session
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    line_items: [
-      {
-        price_data: {
-          currency: "bdt",
-          product_data: {
-            name: serviceRequest.service.name,
-            description: serviceRequest.service.description || undefined,
-          },
-          unit_amount: Math.round(amount * 100),
-        },
-        quantity: 1,
-      },
-    ],
-    metadata: {
-      serviceRequestId: serviceRequest.id,
-      citizenId,
-    },
-    success_url: config.stripe_success_url,
-    cancel_url: config.stripe_cancel_url,
-  });
+	// Create Stripe Checkout Session
+	const session = await stripe.checkout.sessions.create({
+		mode: "payment",
+		line_items: [
+			{
+				price_data: {
+					currency: "bdt",
+					product_data: {
+						name: serviceRequest.service.name,
+						description: serviceRequest.service.description || undefined,
+					},
+					unit_amount: Math.round(amount * 100),
+				},
+				quantity: 1,
+			},
+		],
+		metadata: {
+			serviceRequestId: serviceRequest.id,
+			citizenId,
+		},
+		success_url: config.stripe_success_url,
+		cancel_url: config.stripe_cancel_url,
+	});
 
-  // Save payment and update service request
-  const payment = await prisma.$transaction(async (tx) => {
-    if (serviceRequest.payment) {
-      // Update existing pending payment
-      return tx.payment.update({
-        where: {
-          id: serviceRequest.payment.id,
-        },
-        data: {
-          stripeSessionId: session.id,
-          status: "PENDING",
-          initiatedAt: new Date(),
-        },
-      });
-    }
+	// Save payment and update service request
+	const payment = await prisma.$transaction(async (tx) => {
+		if (serviceRequest.payment) {
+			// Update existing pending payment
+			return tx.payment.update({
+				where: {
+					id: serviceRequest.payment.id,
+				},
+				data: {
+					stripeSessionId: session.id,
+					status: "PENDING",
+					initiatedAt: new Date(),
+				},
+			});
+		}
 
-    // Create payment for the first time
-    return tx.payment.create({
-      data: {
-        serviceRequestId: serviceRequest.id,
-        citizenId,
-        amount: serviceRequest.amount,
-        currency: "BDT",
-        stripeSessionId: session.id,
-        status: "PENDING",
-      },
-    });
-  });
+		// Create payment for the first time
+		return tx.payment.create({
+			data: {
+				serviceRequestId: serviceRequest.id,
+				citizenId,
+				amount: serviceRequest.amount,
+				currency: "BDT",
+				stripeSessionId: session.id,
+				status: "PENDING",
+			},
+		});
+	});
 
-  // Update service request status
-  if (serviceRequest.status === "APPROVED") {
-    await prisma.serviceRequest.update({
-      where: {
-        id: serviceRequest.id,
-      },
-      data: {
-        status: "PAYMENT_PENDING",
-      },
-    });
-  }
+	// Update service request status
+	if (serviceRequest.status === "APPROVED") {
+		await prisma.serviceRequest.update({
+			where: {
+				id: serviceRequest.id,
+			},
+			data: {
+				status: "PAYMENT_PENDING",
+			},
+		});
+	}
 
-  // Create audit log
-  await createAuditLog({
-    userId: citizenId,
-    action: "CREATE_PAYMENT",
-    entity: "Payment",
-    entityId: payment.id,
-    details: {
-      serviceRequestId: serviceRequest.id,
-      amount: payment.amount.toString(),
-      currency: payment.currency,
-    },
-  });
+	// Create audit log
+	await createAuditLog({
+		userId: citizenId,
+		action: "CREATE_PAYMENT",
+		entity: "Payment",
+		entityId: payment.id,
+		details: {
+			serviceRequestId: serviceRequest.id,
+			amount: payment.amount.toString(),
+			currency: payment.currency,
+		},
+	});
 
-  return {
-    payment,
-    checkoutUrl: session.url,
-  };
+	return {
+		payment,
+		checkoutUrl: session.url,
+	};
 };
 
 // Handle Stripe webhook
 const handleStripeWebhook = async (signature: string, rawBody: Buffer) => {
-  // Verify Stripe webhook signature
-  const event = stripe.webhooks.constructEvent(
-    rawBody,
-    signature,
-    config.stripe_webhook_secret as string,
-  );
+	// Verify Stripe webhook signature
+	const event = stripe.webhooks.constructEvent(
+		rawBody,
+		signature,
+		config.stripe_webhook_secret as string,
+	);
 
-  // Process successful Checkout Session
-  if (event.type !== "checkout.session.completed") {
-    return;
-  }
+	// Process successful Checkout Session
+	if (event.type !== "checkout.session.completed") {
+		return;
+	}
 
-  const session = event.data.object;
+	const session = event.data.object;
 
-  const serviceRequestId = session.metadata?.serviceRequestId;
+	const serviceRequestId = session.metadata?.serviceRequestId;
 
-  // Throw an error if service request ID is missing
-  if (!serviceRequestId) {
-    throw new Error("Service request ID not found in Stripe metadata.");
-  }
+	// Throw an error if service request ID is missing
+	if (!serviceRequestId) {
+		throw new Error("Service request ID not found in Stripe metadata.");
+	}
 
-  const paymentIntentId =
-    typeof session.payment_intent === "string"
-      ? session.payment_intent
-      : session.payment_intent?.id;
+	const paymentIntentId =
+		typeof session.payment_intent === "string"
+			? session.payment_intent
+			: session.payment_intent?.id;
 
-  let completedPaymentId: string | null = null;
-  let completedCitizenId: string | null = null;
+	let completedPaymentId: string | null = null;
+	let completedCitizenId: string | null = null;
 
-  // Update payment and service request
-  await prisma.$transaction(async (tx) => {
-    const payment = await tx.payment.findUnique({
-      where: {
-        stripeSessionId: session.id,
-      },
-    });
+	// Update payment and service request
+	await prisma.$transaction(async (tx) => {
+		const payment = await tx.payment.findUnique({
+			where: {
+				stripeSessionId: session.id,
+			},
+		});
 
-    // Throw an error if payment does not exist
-    if (!payment) {
-      throw new Error("Payment not found.");
-    }
+		// Throw an error if payment does not exist
+		if (!payment) {
+			throw new Error("Payment not found.");
+		}
 
-    // Ignore duplicate webhook events
-    if (payment.status === "PAID") {
-      return;
-    }
+		// Ignore duplicate webhook events
+		if (payment.status === "PAID") {
+			return;
+		}
 
-    await tx.payment.update({
-      where: {
-        id: payment.id,
-      },
-      data: {
-        status: "PAID",
-        stripePaymentId: paymentIntentId,
-        paidAt: new Date(),
-      },
-    });
+		await tx.payment.update({
+			where: {
+				id: payment.id,
+			},
+			data: {
+				status: "PAID",
+				stripePaymentId: paymentIntentId,
+				paidAt: new Date(),
+			},
+		});
 
-    // Store payment and citizen IDs for audit log
-    completedPaymentId = payment.id;
-    completedCitizenId = payment.citizenId;
+		// Store payment and citizen IDs for audit log
+		completedPaymentId = payment.id;
+		completedCitizenId = payment.citizenId;
 
-    await tx.serviceRequest.update({
-      where: {
-        id: serviceRequestId,
-      },
-      data: {
-        status: "CONFIRMED",
-        confirmedAt: new Date(),
-      },
-    });
-  });
+		await tx.serviceRequest.update({
+			where: {
+				id: serviceRequestId,
+			},
+			data: {
+				status: "CONFIRMED",
+				confirmedAt: new Date(),
+			},
+		});
+	});
 
-  // Create audit log
-  if (completedPaymentId && completedCitizenId) {
-    await createAuditLog({
-      userId: completedCitizenId,
-      action: "PAYMENT_COMPLETED",
-      entity: "Payment",
-      entityId: completedPaymentId,
-      details: {
-        stripeSessionId: session.id,
-        stripePaymentId: paymentIntentId,
-        serviceRequestId,
-      },
-    });
-  }
+	// Create audit log
+	if (completedPaymentId && completedCitizenId) {
+		await createAuditLog({
+			userId: completedCitizenId,
+			action: "PAYMENT_COMPLETED",
+			entity: "Payment",
+			entityId: completedPaymentId,
+			details: {
+				stripeSessionId: session.id,
+				stripePaymentId: paymentIntentId,
+				serviceRequestId,
+			},
+		});
+	}
 };
 
 const getAllPayments = async () => {
-  const payments = await prisma.payment.findMany({
-    include: {
-      citizen: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      serviceRequest: {
-        include: {
-          service: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+	const payments = await prisma.payment.findMany({
+		include: {
+			citizen: {
+				select: {
+					id: true,
+					name: true,
+					email: true,
+				},
+			},
+			serviceRequest: {
+				include: {
+					service: true,
+				},
+			},
+		},
+		orderBy: {
+			createdAt: "desc",
+		},
+	});
 
-  return payments;
+	return payments;
 };
 
 const getMyPayments = async (citizenId: string) => {
-  const payments = await prisma.payment.findMany({
-    where: {
-      citizenId,
-    },
-    include: {
-      serviceRequest: {
-        include: {
-          service: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+	const payments = await prisma.payment.findMany({
+		where: {
+			citizenId,
+		},
+		include: {
+			serviceRequest: {
+				include: {
+					service: true,
+				},
+			},
+		},
+		orderBy: {
+			createdAt: "desc",
+		},
+	});
 
-  return payments;
+	return payments;
 };
 
 export const paymentService = {
-  createPayment,
-  handleStripeWebhook,
-  getAllPayments,
-  getMyPayments,
+	createPayment,
+	handleStripeWebhook,
+	getAllPayments,
+	getMyPayments,
 };

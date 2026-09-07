@@ -1,30 +1,30 @@
-import { ServiceRequestStatus } from "../../../../generated/prisma/enums";
+import type { ServiceRequestStatus } from "../../../../generated/prisma/enums";
 
 export interface ICreateServiceRequestPayload {
-  serviceId: string;
-  description?: string;
-  location: string;
-  imageUrl?: string;
-  imagePublicId?: string;
+	serviceId: string;
+	description?: string;
+	location: string;
+	imageUrl?: string;
+	imagePublicId?: string;
 }
 
 export interface IReviewServiceRequestPayload {
-  status: "APPROVED" | "REJECTED";
+	status: "APPROVED" | "REJECTED";
 }
 
 export interface IAssignServiceRequestPayload {
-  officerId: string;
+	officerId: string;
 }
 
 export interface IUpdateServiceRequestStatusInProgressPayload {
-  status: "IN_PROGRESS" | "COMPLETED";
+	status: "IN_PROGRESS" | "COMPLETED";
 }
 
 export interface IGetAllServiceRequestsParams {
-  page: number;
-  limit: number;
-  search?: string;
-  status?: ServiceRequestStatus;
-  serviceId?: string;
-  sortOrder: "asc" | "desc";
+	page: number;
+	limit: number;
+	search?: string;
+	status?: ServiceRequestStatus;
+	serviceId?: string;
+	sortOrder: "asc" | "desc";
 }

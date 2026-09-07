@@ -8,10 +8,10 @@ import { paymentController } from "./payment.controller";
 const router = Router();
 
 router.post(
-  "/create",
-  auth(Role.CITIZEN),
-  validateRequest(createPaymentSchema),
-  paymentController.createPayment,
+	"/create",
+	auth(Role.CITIZEN),
+	validateRequest(createPaymentSchema),
+	paymentController.createPayment,
 );
 
 router.post("/webhook", paymentController.handleStripeWebhook);

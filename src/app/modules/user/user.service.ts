@@ -1,158 +1,158 @@
 import { prisma } from "../../lib/prisma";
 import { createAuditLog } from "../../utils/auditLog";
-import { IGetAllUsersParams } from "./user.interface";
+import type { IGetAllUsersParams } from "./user.interface";
 
 const getAllUsers = async ({
-  page,
-  limit,
-  search,
-  role,
-  status,
-  sortOrder,
+	page,
+	limit,
+	search,
+	role,
+	status,
+	sortOrder,
 }: IGetAllUsersParams) => {
-  const skip = (page - 1) * limit;
+	const skip = (page - 1) * limit;
 
-  // Build user filters
-  const where = {
-    ...(status === "DELETED"
-      ? {
-          deletedAt: {
-            not: null,
-          },
-        }
-      : {
-          deletedAt: null,
-          ...(status && {
-            status,
-          }),
-        }),
+	// Build user filters
+	const where = {
+		...(status === "DELETED"
+			? {
+					deletedAt: {
+						not: null,
+					},
+				}
+			: {
+					deletedAt: null,
+					...(status && {
+						status,
+					}),
+				}),
 
-    ...(role && {
-      role,
-    }),
+		...(role && {
+			role,
+		}),
 
-    ...(search && {
-      OR: [
-        {
-          name: {
-            contains: search,
-            mode: "insensitive" as const,
-          },
-        },
-        {
-          email: {
-            contains: search,
-            mode: "insensitive" as const,
-          },
-        },
-      ],
-    }),
-  };
+		...(search && {
+			OR: [
+				{
+					name: {
+						contains: search,
+						mode: "insensitive" as const,
+					},
+				},
+				{
+					email: {
+						contains: search,
+						mode: "insensitive" as const,
+					},
+				},
+			],
+		}),
+	};
 
-  // Get users and total count
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        status: true,
-        emailVerified: true,
-        authProvider: true,
-        imageUrl: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: {
-        createdAt: sortOrder,
-      },
-      skip,
-      take: limit,
-    }),
+	// Get users and total count
+	const [users, total] = await Promise.all([
+		prisma.user.findMany({
+			where,
+			select: {
+				id: true,
+				name: true,
+				email: true,
+				role: true,
+				status: true,
+				emailVerified: true,
+				authProvider: true,
+				imageUrl: true,
+				createdAt: true,
+				updatedAt: true,
+			},
+			orderBy: {
+				createdAt: sortOrder,
+			},
+			skip,
+			take: limit,
+		}),
 
-    prisma.user.count({
-      where,
-    }),
-  ]);
+		prisma.user.count({
+			where,
+		}),
+	]);
 
-  return {
-    data: users,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
+	return {
+		data: users,
+		pagination: {
+			page,
+			limit,
+			total,
+			totalPages: Math.ceil(total / limit),
+		},
+	};
 };
 
 // Update user status
 const updateUserStatus = async (
-  userId: string,
-  status: "ACTIVE" | "BLOCKED",
-  adminId: string,
+	userId: string,
+	status: "ACTIVE" | "BLOCKED",
+	adminId: string,
 ) => {
-  // Check if user exists
-  const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-  });
+	// Check if user exists
+	const user = await prisma.user.findUnique({
+		where: {
+			id: userId,
+		},
+	});
 
-  if (!user) {
-    throw new Error("User not found.");
-  }
+	if (!user) {
+		throw new Error("User not found.");
+	}
 
-  // Check if user is already deleted
-  if (user.deletedAt) {
-    throw new Error("Deleted users cannot be updated.");
-  }
+	// Check if user is already deleted
+	if (user.deletedAt) {
+		throw new Error("Deleted users cannot be updated.");
+	}
 
-  // Check if status is already the same
-  if (user.status === status) {
-    throw new Error(`User is already ${status.toLowerCase()}.`);
-  }
+	// Check if status is already the same
+	if (user.status === status) {
+		throw new Error(`User is already ${status.toLowerCase()}.`);
+	}
 
-  // Update user status
-  const updatedUser = await prisma.user.update({
-    where: {
-      id: userId,
-    },
-    data: {
-      status,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      status: true,
-      emailVerified: true,
-      authProvider: true,
-      imageUrl: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
+	// Update user status
+	const updatedUser = await prisma.user.update({
+		where: {
+			id: userId,
+		},
+		data: {
+			status,
+		},
+		select: {
+			id: true,
+			name: true,
+			email: true,
+			role: true,
+			status: true,
+			emailVerified: true,
+			authProvider: true,
+			imageUrl: true,
+			createdAt: true,
+			updatedAt: true,
+		},
+	});
 
-  // Create audit log
-  await createAuditLog({
-    userId: adminId,
-    action: "UPDATE_USER_STATUS",
-    entity: "User",
-    entityId: updatedUser.id,
-    details: {
-      previousStatus: user.status,
-      newStatus: status,
-    },
-  });
+	// Create audit log
+	await createAuditLog({
+		userId: adminId,
+		action: "UPDATE_USER_STATUS",
+		entity: "User",
+		entityId: updatedUser.id,
+		details: {
+			previousStatus: user.status,
+			newStatus: status,
+		},
+	});
 
-  return updatedUser;
+	return updatedUser;
 };
 
 export const userService = {
-  getAllUsers,
-  updateUserStatus,
+	getAllUsers,
+	updateUserStatus,
 };

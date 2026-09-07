@@ -6,15 +6,15 @@ import { dashboardController } from "./dashboard.controller";
 const router = Router();
 
 router.get(
-  "/admin/overview",
-  auth(Role.ADMIN),
-  dashboardController.getAdminDashboardOverview,
+	"/admin/overview",
+	auth(Role.ADMIN),
+	dashboardController.getAdminDashboardOverview,
 );
 
 router.get(
-  "/admin/analytics",
-  auth(Role.ADMIN),
-  dashboardController.getAdminDashboardAnalytics,
+	"/admin/analytics",
+	auth(Role.ADMIN),
+	dashboardController.getAdminDashboardAnalytics,
 );
 
 export const dashboardRoutes = router;

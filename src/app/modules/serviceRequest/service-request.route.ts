@@ -3,11 +3,11 @@ import { auth } from "../../middleware/auth";
 import { Role } from "../../../../generated/prisma/enums";
 import { validateRequest } from "../../middleware/validateRequest";
 import {
-  assignServiceRequestSchema,
-  createServiceRequestSchema,
-  getAllServiceRequestsQuerySchema,
-  reviewServiceRequestSchema,
-  updateServiceRequestStatusInProgressSchema,
+	assignServiceRequestSchema,
+	createServiceRequestSchema,
+	getAllServiceRequestsQuerySchema,
+	reviewServiceRequestSchema,
+	updateServiceRequestStatusInProgressSchema,
 } from "./service-request.validation";
 import { serviceRequestController } from "./service-request.controller";
 import { upload } from "../../lib/multer";
@@ -15,57 +15,57 @@ import { upload } from "../../lib/multer";
 const router = Router();
 
 router.post(
-  "/",
-  auth(Role.CITIZEN),
-  upload.single("image"),
-  validateRequest(createServiceRequestSchema),
-  serviceRequestController.createServiceRequest,
+	"/",
+	auth(Role.CITIZEN),
+	upload.single("image"),
+	validateRequest(createServiceRequestSchema),
+	serviceRequestController.createServiceRequest,
 );
 
 router.get(
-  "/",
-  auth(Role.ADMIN),
-  validateRequest(getAllServiceRequestsQuerySchema),
-  serviceRequestController.getAllServiceRequests,
+	"/",
+	auth(Role.ADMIN),
+	validateRequest(getAllServiceRequestsQuerySchema),
+	serviceRequestController.getAllServiceRequests,
 );
 
 router.get(
-  "/my-service-request",
-  auth(Role.CITIZEN),
-  serviceRequestController.getMyServiceRequests,
+	"/my-service-request",
+	auth(Role.CITIZEN),
+	serviceRequestController.getMyServiceRequests,
 );
 
 router.get(
-  "/:id",
-  auth(Role.CITIZEN),
-  serviceRequestController.getServiceRequestById,
+	"/:id",
+	auth(Role.CITIZEN),
+	serviceRequestController.getServiceRequestById,
 );
 
 router.patch(
-  "/:id/assign",
-  auth(Role.ADMIN),
-  validateRequest(assignServiceRequestSchema),
-  serviceRequestController.assignServiceRequest,
+	"/:id/assign",
+	auth(Role.ADMIN),
+	validateRequest(assignServiceRequestSchema),
+	serviceRequestController.assignServiceRequest,
 );
 
 router.patch(
-  "/:id/service-request-status",
-  auth(Role.ADMIN),
-  validateRequest(reviewServiceRequestSchema),
-  serviceRequestController.UpdateServiceRequestStatus,
+	"/:id/service-request-status",
+	auth(Role.ADMIN),
+	validateRequest(reviewServiceRequestSchema),
+	serviceRequestController.UpdateServiceRequestStatus,
 );
 
 router.patch(
-  "/:id/status",
-  auth(Role.OFFICER),
-  validateRequest(updateServiceRequestStatusInProgressSchema),
-  serviceRequestController.updateServiceRequestInProgressStatus,
+	"/:id/status",
+	auth(Role.OFFICER),
+	validateRequest(updateServiceRequestStatusInProgressSchema),
+	serviceRequestController.updateServiceRequestInProgressStatus,
 );
 
 router.delete(
-  "/:id",
-  auth(Role.CITIZEN),
-  serviceRequestController.deleteServiceRequest,
+	"/:id",
+	auth(Role.CITIZEN),
+	serviceRequestController.deleteServiceRequest,
 );
 
 export const serviceRequestRoutes = router;
