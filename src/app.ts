@@ -23,6 +23,7 @@ import { userRoutes } from "./app/modules/user/user.routes";
 import { dashboardRoutes } from "./app/modules/dashboard/dashboard.routes";
 
 const app = express();
+app.set("trust proxy", 1);
 
 app.use("/api/v1/payments/webhook", express.raw({ type: "application/json" }));
 

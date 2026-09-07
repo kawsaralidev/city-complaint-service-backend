@@ -26,6 +26,7 @@ router.patch(
   validateRequest(updateProfileValidationSchema),
   userController.updateMyProfile,
 );
+
 router.patch(
   "/:id/status",
   auth(Role.ADMIN),
