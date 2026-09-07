@@ -1,3 +1,5 @@
+import { HttpStatus } from "../../../constants/httpStatus";
+import { AppError } from "../../utils/AppError";
 import type { CategoryType } from "../../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 
@@ -12,7 +14,7 @@ const createCategory = async (name: string, type: CategoryType) => {
 
 	// Throw an error if category already exists
 	if (existingCategory) {
-		throw new Error("Category with this name already exists.");
+		throw new AppError(HttpStatus.CONFLICT, "Category with this name already exists.");
 	}
 
 	// Create category
@@ -51,7 +53,7 @@ const getCategoryById = async (id: string) => {
 
 	// Throw an error if category does not exist
 	if (!category) {
-		throw new Error("Category not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Category not found.");
 	}
 
 	return category;
@@ -74,7 +76,7 @@ const updateCategory = async (
 
 	// Throw an error if category does not exist
 	if (!existingCategory) {
-		throw new Error("Category not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Category not found.");
 	}
 
 	// Check if new category name already exists
@@ -86,7 +88,7 @@ const updateCategory = async (
 		});
 
 		if (duplicateCategory) {
-			throw new Error("Category with this name already exists.");
+			throw new AppError(HttpStatus.CONFLICT, "Category with this name already exists.");
 		}
 	}
 
@@ -112,7 +114,7 @@ const updateCategoryStatus = async (id: string, isActive: boolean) => {
 
 	// Throw an error if category does not exist
 	if (!existingCategory) {
-		throw new Error("Category not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Category not found.");
 	}
 
 	// Update category status

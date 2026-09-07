@@ -1,3 +1,5 @@
+import { HttpStatus } from "../../../constants/httpStatus";
+import { AppError } from "../../utils/AppError";
 import { ServiceRequestStatus } from "../../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { createAuditLog } from "../../utils/auditLog";
@@ -24,12 +26,12 @@ const createServiceRequest = async (
 
 	// Throw an error if service does not exist
 	if (!service) {
-		throw new Error("Service not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Service not found.");
 	}
 
 	// Throw an error if service is inactive
 	if (!service.isActive) {
-		throw new Error("This service is currently inactive.");
+		throw new AppError(HttpStatus.BAD_REQUEST, "This service is currently inactive.");
 	}
 
 	let imageUrl: string | undefined;
@@ -211,7 +213,7 @@ const getServiceRequestById = async (id: string, citizenId: string) => {
 
 	// Throw an error if service request does not exist
 	if (!serviceRequest) {
-		throw new Error("Service request not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Service request not found.");
 	}
 
 	return serviceRequest;
@@ -231,12 +233,12 @@ const UpdateServiceRequestStatus = async (
 
 	// Throw an error if service request does not exist
 	if (!serviceRequest) {
-		throw new Error("Service request not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Service request not found.");
 	}
 
 	// Throw an error if request is not pending
 	if (serviceRequest.status !== "PENDING") {
-		throw new Error("Only pending service requests can be reviewed.");
+		throw new AppError(HttpStatus.BAD_REQUEST, "Only pending service requests can be reviewed.");
 	}
 
 	const updatedServiceRequest = await prisma.serviceRequest.update({
@@ -291,16 +293,17 @@ const assignServiceRequest = async (
 
 	// Throw an error if service request does not exist
 	if (!serviceRequest) {
-		throw new Error("Service request not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Service request not found.");
 	}
 
 	// Check if payment is completed
 	if (serviceRequest.status !== "CONFIRMED") {
-		throw new Error("Only confirmed service requests can be assigned.");
+		throw new AppError(HttpStatus.BAD_REQUEST, "Only confirmed service requests can be assigned.");
 	}
 
 	if (serviceRequest.payment?.status !== "PAID") {
-		throw new Error(
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
 			"Service request cannot be assigned before payment is completed.",
 		);
 	}
@@ -317,7 +320,7 @@ const assignServiceRequest = async (
 
 	// Throw an error if officer does not exist
 	if (!officer) {
-		throw new Error("Active officer not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Active officer not found.");
 	}
 
 	// Check if service request is already assigned
@@ -328,7 +331,7 @@ const assignServiceRequest = async (
 	});
 
 	if (existingAssignment) {
-		throw new Error("This service request has already been assigned.");
+		throw new AppError(HttpStatus.CONFLICT, "This service request has already been assigned.");
 	}
 
 	// Create assignment and update service request
@@ -409,7 +412,7 @@ const updateServiceRequestInProgressStatus = async (
 
 	// Throw an error if service request is not assigned to the officer
 	if (!serviceRequest) {
-		throw new Error("Service request not found or not assigned to you.");
+		throw new AppError(HttpStatus.FORBIDDEN, "Service request not found or not assigned to you.");
 	}
 
 	// Check valid status transition
@@ -417,7 +420,8 @@ const updateServiceRequestInProgressStatus = async (
 		serviceRequest.status === "ASSIGNED" &&
 		payload.status !== "IN_PROGRESS"
 	) {
-		throw new Error(
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
 			"Assigned service requests can only be moved to in progress.",
 		);
 	}
@@ -426,7 +430,7 @@ const updateServiceRequestInProgressStatus = async (
 		serviceRequest.status === "IN_PROGRESS" &&
 		payload.status !== "COMPLETED"
 	) {
-		throw new Error("In-progress service requests can only be completed.");
+		throw new AppError(HttpStatus.BAD_REQUEST, "In-progress service requests can only be completed.");
 	}
 
 	// Throw an error for invalid current status
@@ -434,7 +438,8 @@ const updateServiceRequestInProgressStatus = async (
 		serviceRequest.status !== "ASSIGNED" &&
 		serviceRequest.status !== "IN_PROGRESS"
 	) {
-		throw new Error(
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
 			"This service request cannot be updated at its current status.",
 		);
 	}
@@ -495,12 +500,12 @@ const deleteServiceRequest = async (
 	});
 
 	if (!serviceRequest) {
-		throw new Error("Service request not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Service request not found.");
 	}
 
 	// Check service request status
 	if (serviceRequest.status !== ServiceRequestStatus.PENDING) {
-		throw new Error("Only pending service requests can be deleted.");
+		throw new AppError(HttpStatus.BAD_REQUEST, "Only pending service requests can be deleted.");
 	}
 
 	// Soft delete service request

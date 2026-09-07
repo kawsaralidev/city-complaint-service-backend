@@ -1,3 +1,4 @@
+import { AppError } from "../../utils/AppError";
 import type { Request, Response } from "express";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { complaintService } from "./complaint.service";
@@ -11,7 +12,7 @@ const createComplaint = async (req: Request, res: Response) => {
 	const citizenId = req.user?.userId;
 
 	if (!citizenId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
 	}
 
 	let imageUrl: string | undefined;
@@ -46,7 +47,7 @@ const getMyComplaints = async (req: Request, res: Response) => {
 	const citizenId = req.user?.userId;
 
 	if (!citizenId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
 	}
 
 	const complaints = await complaintService.getMyComplaints(citizenId);
@@ -65,7 +66,7 @@ const getComplaintById = async (req: Request, res: Response) => {
 	const role = req.user?.role;
 
 	if (!userId || !role) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
 	}
 
 	const complaint = await complaintService.getComplaintById(
@@ -105,7 +106,7 @@ const updateComplaint = async (req: Request, res: Response) => {
 	const complaintId = req.params.id as string;
 	const citizenId = req.user?.userId;
 
-	if (!citizenId) throw new Error("Authenticated user not found.");
+	if (!citizenId) throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
 	let imageUrl: string | undefined;
 	let imagePublicId: string | undefined;
 
@@ -141,7 +142,7 @@ const assignComplaint = async (req: Request, res: Response) => {
 	const { officerId } = req.body;
 
 	if (!assignedBy) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
 	}
 
 	const result = await complaintService.assignComplaint(
@@ -162,7 +163,7 @@ const getAssignedComplaints = async (req: Request, res: Response) => {
 	const officerId = req.user?.userId;
 
 	if (!officerId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
 	}
 
 	const complaints = await complaintService.getAssignedComplaints(officerId);
@@ -182,7 +183,7 @@ const updateComplaintStatus = async (req: Request, res: Response) => {
 	const { status } = req.body;
 
 	if (!userId || !role) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
 	}
 
 	const complaint = await complaintService.updateComplaintStatus(
@@ -205,7 +206,7 @@ const createComplaintResolution = async (req: Request, res: Response) => {
 	const officerId = req.user?.userId;
 
 	if (!officerId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
 	}
 
 	let imageUrl: string | undefined;

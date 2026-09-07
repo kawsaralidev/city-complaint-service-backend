@@ -1,3 +1,5 @@
+import { HttpStatus } from "../../../constants/httpStatus";
+import { AppError } from "../../utils/AppError";
 import { prisma } from "../../lib/prisma";
 import { createAuditLog } from "../../utils/auditLog";
 import type { IGetAllUsersParams } from "./user.interface";
@@ -102,17 +104,17 @@ const updateUserStatus = async (
 	});
 
 	if (!user) {
-		throw new Error("User not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
 	}
 
 	// Check if user is already deleted
 	if (user.deletedAt) {
-		throw new Error("Deleted users cannot be updated.");
+		throw new AppError(HttpStatus.BAD_REQUEST, "Deleted users cannot be updated.");
 	}
 
 	// Check if status is already the same
 	if (user.status === status) {
-		throw new Error(`User is already ${status.toLowerCase()}.`);
+		throw new AppError(HttpStatus.CONFLICT, `User is already ${status.toLowerCase()}.`);
 	}
 
 	// Update user status
