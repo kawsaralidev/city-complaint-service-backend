@@ -28,6 +28,4 @@ export const updateUserStatusSchema = z.object({
 
 export const updateProfileValidationSchema = z.object({
   name: z.string().trim().min(2).max(100).optional(),
-  imageUrl: z.string().url().optional(),
-  imagePublicId: z.string().optional(),
 });

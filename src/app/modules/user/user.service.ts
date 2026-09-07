@@ -2,7 +2,15 @@ import { HttpStatus } from "../../../constants/httpStatus";
 import { AppError } from "../../utils/AppError";
 import { prisma } from "../../lib/prisma";
 import { createAuditLog } from "../../utils/auditLog";
-import type { IGetAllUsersParams } from "./user.interface";
+import type {
+  IGetAllUsersParams,
+  IProfileImage,
+  IUpdateProfilePayload,
+} from "./user.interface";
+import {
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from "../../utils/cloudinary";
 
 const getAllUsers = async ({
   page,
@@ -162,24 +170,17 @@ const updateUserStatus = async (
 
 const updateMyProfile = async (
   userId: string,
-  data: {
-    name?: string;
-    imageUrl?: string;
-    imagePublicId?: string;
-  },
+  data: IUpdateProfilePayload,
+  file?: IProfileImage,
 ) => {
-  // Check if authenticated user exists
   const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
+    where: { id: userId },
   });
 
   if (!user) {
     throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
   }
 
-  // Check if account is deleted
   if (user.deletedAt) {
     throw new AppError(
       HttpStatus.UNAUTHORIZED,
@@ -187,12 +188,24 @@ const updateMyProfile = async (
     );
   }
 
-  // Check if account is blocked
   if (user.status === "BLOCKED") {
     throw new AppError(HttpStatus.FORBIDDEN, "Your account has been blocked.");
   }
 
-  // Update profile
+  let imageUrl = user.imageUrl;
+  let imagePublicId = user.imagePublicId;
+
+  if (file) {
+    // Upload new image to Cloudinary
+    const uploadedImage = await uploadToCloudinary(
+      file.buffer,
+      "city-complaint/users",
+    );
+
+    imageUrl = uploadedImage.secure_url;
+    imagePublicId = uploadedImage.public_id;
+  }
+
   const updatedUser = await prisma.user.update({
     where: {
       id: userId,
@@ -201,11 +214,9 @@ const updateMyProfile = async (
       ...(data.name !== undefined && {
         name: data.name,
       }),
-      ...(data.imageUrl !== undefined && {
-        imageUrl: data.imageUrl,
-      }),
-      ...(data.imagePublicId !== undefined && {
-        imagePublicId: data.imagePublicId,
+      ...(file && {
+        imageUrl,
+        imagePublicId,
       }),
     },
     select: {
@@ -221,6 +232,19 @@ const updateMyProfile = async (
       updatedAt: true,
     },
   });
+
+  // Audit log
+  await createAuditLog({
+    userId,
+    action: "UPDATE_PROFILE",
+    entity: "User",
+    entityId: userId,
+  });
+
+  // Delete old Cloudinary image
+  if (file && user.imagePublicId) {
+    await deleteFromCloudinary(user.imagePublicId);
+  }
 
   return updatedUser;
 };

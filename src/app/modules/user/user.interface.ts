@@ -7,8 +7,18 @@ export interface IGetAllUsersParams {
   sortOrder: "asc" | "desc";
 }
 
+// export interface IUpdateProfilePayload {
+//   name?: string;
+//   imageUrl?: string;
+//   imagePublicId?: string;
+// }
+
 export interface IUpdateProfilePayload {
   name?: string;
-  imageUrl?: string;
-  imagePublicId?: string;
+}
+
+export interface IProfileImage {
+  buffer: Buffer;
+  mimetype: string;
+  originalname: string;
 }

@@ -8,6 +8,7 @@ import {
   updateUserStatusSchema,
 } from "./user.validation";
 import { userController } from "./user.controller";
+import { upload } from "../../lib/multer";
 
 const router = Router();
 
@@ -21,10 +22,10 @@ router.get(
 router.patch(
   "/me",
   auth(),
+  upload.single("image"),
   validateRequest(updateProfileValidationSchema),
   userController.updateMyProfile,
 );
-
 router.patch(
   "/:id/status",
   auth(Role.ADMIN),

@@ -53,7 +53,7 @@ const updateUserStatus = async (req: Request, res: Response) => {
 const updateMyProfile = async (req: Request, res: Response) => {
   const userId = req.user!.userId;
 
-  const result = await userService.updateMyProfile(userId, req.body);
+  const result = await userService.updateMyProfile(userId, req.body, req.file);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -62,7 +62,6 @@ const updateMyProfile = async (req: Request, res: Response) => {
     data: result,
   });
 };
-
 export const userController = {
   getAllUsers,
   updateUserStatus,
