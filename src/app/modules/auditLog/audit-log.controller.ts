@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { auditLogService } from "./audit-log.service";
 import { getAllAuditLogsQuerySchema } from "./audit-log.validation";
+import { sendResponse } from "../../utils/sendResponse";
 
 const getAllAuditLogs = async (req: Request, res: Response) => {
 	// Validate audit log query parameters
@@ -28,7 +29,8 @@ const getAllAuditLogs = async (req: Request, res: Response) => {
 		sortOrder,
 	});
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Audit logs retrieved successfully.",
 		data: auditLogs,

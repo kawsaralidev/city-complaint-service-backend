@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { categoryService } from "./category.service";
+import { sendResponse } from "../../utils/sendResponse";
 
 // Create Category
 const createCategory = async (req: Request, res: Response) => {
@@ -8,7 +9,8 @@ const createCategory = async (req: Request, res: Response) => {
 
 	const category = await categoryService.createCategory(name, type);
 
-	res.status(HttpStatus.CREATED).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.CREATED,
 		success: true,
 		message: "Category created successfully.",
 		data: category,
@@ -19,7 +21,8 @@ const createCategory = async (req: Request, res: Response) => {
 const getAllCategories = async (req: Request, res: Response) => {
 	const categories = await categoryService.getAllCategories();
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Categories retrieved successfully.",
 		data: categories,
@@ -32,7 +35,8 @@ const getCategoryById = async (req: Request, res: Response) => {
 
 	const category = await categoryService.getCategoryById(id);
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Category retrieved successfully.",
 		data: category,
@@ -45,7 +49,8 @@ const updateCategory = async (req: Request, res: Response) => {
 
 	const category = await categoryService.updateCategory(id, req.body);
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Category updated successfully.",
 		data: category,
@@ -59,7 +64,8 @@ const updateCategoryStatus = async (req: Request, res: Response) => {
 
 	const category = await categoryService.updateCategoryStatus(id, isActive);
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Category status updated successfully.",
 		data: category,

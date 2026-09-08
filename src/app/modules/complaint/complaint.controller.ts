@@ -1,9 +1,9 @@
-import { AppError } from "../../utils/AppError";
 import type { Request, Response } from "express";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { complaintService } from "./complaint.service";
 import type { ComplaintStatus } from "../../../../generated/prisma/enums";
 import { uploadToCloudinary } from "../../utils/cloudinary";
+import { sendResponse } from "../../utils/sendResponse";
 
 // Create Complaint
 const createComplaint = async (req: Request, res: Response) => {
@@ -12,7 +12,7 @@ const createComplaint = async (req: Request, res: Response) => {
 	const citizenId = req.user?.userId;
 
 	if (!citizenId) {
-		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
+		throw new Error("Authenticated user not found.");
 	}
 
 	let imageUrl: string | undefined;
@@ -35,7 +35,8 @@ const createComplaint = async (req: Request, res: Response) => {
 		imagePublicId,
 	});
 
-	res.status(HttpStatus.CREATED).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.CREATED,
 		success: true,
 		message: "Complaint created successfully.",
 		data: complaint,
@@ -47,12 +48,13 @@ const getMyComplaints = async (req: Request, res: Response) => {
 	const citizenId = req.user?.userId;
 
 	if (!citizenId) {
-		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
+		throw new Error("Authenticated user not found.");
 	}
 
 	const complaints = await complaintService.getMyComplaints(citizenId);
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Complaints retrieved successfully.",
 		data: complaints,
@@ -66,7 +68,7 @@ const getComplaintById = async (req: Request, res: Response) => {
 	const role = req.user?.role;
 
 	if (!userId || !role) {
-		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
+		throw new Error("Authenticated user not found.");
 	}
 
 	const complaint = await complaintService.getComplaintById(
@@ -74,7 +76,8 @@ const getComplaintById = async (req: Request, res: Response) => {
 		userId,
 		role,
 	);
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Complaint retrieved successfully.",
 		data: complaint,
@@ -93,11 +96,12 @@ const getAllComplaints = async (req: Request, res: Response) => {
 		},
 	);
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Complaints retrieved successfully.",
 		data: result.complaints,
-		pagination: result.pagination,
+		meta: result.pagination,
 	});
 };
 
@@ -106,7 +110,7 @@ const updateComplaint = async (req: Request, res: Response) => {
 	const complaintId = req.params.id as string;
 	const citizenId = req.user?.userId;
 
-	if (!citizenId) throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
+	if (!citizenId) throw new Error("Authenticated user not found.");
 	let imageUrl: string | undefined;
 	let imagePublicId: string | undefined;
 
@@ -128,7 +132,8 @@ const updateComplaint = async (req: Request, res: Response) => {
 		},
 	);
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Complaint updated successfully.",
 		data: complaint,
@@ -142,7 +147,7 @@ const assignComplaint = async (req: Request, res: Response) => {
 	const { officerId } = req.body;
 
 	if (!assignedBy) {
-		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
+		throw new Error("Authenticated user not found.");
 	}
 
 	const result = await complaintService.assignComplaint(
@@ -151,7 +156,8 @@ const assignComplaint = async (req: Request, res: Response) => {
 		assignedBy,
 	);
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Complaint assigned successfully.",
 		data: result,
@@ -163,12 +169,13 @@ const getAssignedComplaints = async (req: Request, res: Response) => {
 	const officerId = req.user?.userId;
 
 	if (!officerId) {
-		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
+		throw new Error("Authenticated user not found.");
 	}
 
 	const complaints = await complaintService.getAssignedComplaints(officerId);
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Assigned complaints retrieved successfully.",
 		data: complaints,
@@ -183,7 +190,7 @@ const updateComplaintStatus = async (req: Request, res: Response) => {
 	const { status } = req.body;
 
 	if (!userId || !role) {
-		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
+		throw new Error("Authenticated user not found.");
 	}
 
 	const complaint = await complaintService.updateComplaintStatus(
@@ -193,7 +200,8 @@ const updateComplaintStatus = async (req: Request, res: Response) => {
 		status,
 	);
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Complaint status updated successfully.",
 		data: complaint,
@@ -206,7 +214,7 @@ const createComplaintResolution = async (req: Request, res: Response) => {
 	const officerId = req.user?.userId;
 
 	if (!officerId) {
-		throw new AppError(HttpStatus.UNAUTHORIZED, "Authenticated user not found.");
+		throw new Error("Authenticated user not found.");
 	}
 
 	let imageUrl: string | undefined;
@@ -233,7 +241,8 @@ const createComplaintResolution = async (req: Request, res: Response) => {
 		},
 	);
 
-	res.status(HttpStatus.CREATED).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.CREATED,
 		success: true,
 		message: "Complaint resolution added successfully.",
 		data: result,
@@ -250,7 +259,8 @@ const deleteComplaint = async (req: Request, res: Response) => {
 		citizenId as string,
 	);
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Complaint deleted successfully.",
 		data: complaint,

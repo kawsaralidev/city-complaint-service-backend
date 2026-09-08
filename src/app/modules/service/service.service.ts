@@ -1,5 +1,3 @@
-import { HttpStatus } from "../../../constants/httpStatus";
-import { AppError } from "../../utils/AppError";
 import { prisma } from "../../lib/prisma";
 import type { IGetServicesParams } from "./service.interface";
 
@@ -16,7 +14,7 @@ const createService = async (data: {
 	});
 
 	if (existingService) {
-		throw new AppError(HttpStatus.CONFLICT, "A service with this name already exists.");
+		throw new Error("A service with this name already exists.");
 	}
 
 	// Create service
@@ -117,7 +115,7 @@ const updateService = async (
 	});
 
 	if (!existingService) {
-		throw new AppError(HttpStatus.NOT_FOUND, "Service not found.");
+		throw new Error("Service not found.");
 	}
 
 	if (data.name && data.name !== existingService.name) {
@@ -128,7 +126,7 @@ const updateService = async (
 		});
 
 		if (duplicateService) {
-			throw new AppError(HttpStatus.CONFLICT, "A service with this name already exists.");
+			throw new Error("A service with this name already exists.");
 		}
 	}
 

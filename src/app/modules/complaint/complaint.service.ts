@@ -1,5 +1,3 @@
-import { HttpStatus } from "../../../constants/httpStatus";
-import { AppError } from "../../utils/AppError";
 import { ComplaintStatus, Role } from "../../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { createAuditLog } from "../../utils/auditLog";
@@ -26,17 +24,17 @@ const createComplaint = async (
 
 	// Throw an error if category does not exist
 	if (!category) {
-		throw new AppError(HttpStatus.NOT_FOUND, "Category not found.");
+		throw new Error("Category not found.");
 	}
 
 	// Throw an error if category is inactive
 	if (!category.isActive) {
-		throw new AppError(HttpStatus.BAD_REQUEST, "This category is currently inactive.");
+		throw new Error("This category is currently inactive.");
 	}
 
 	// Throw an error if category is not for complaints
 	if (category.type !== "COMPLAINT") {
-		throw new AppError(HttpStatus.BAD_REQUEST, "This category cannot be used for complaints.");
+		throw new Error("This category cannot be used for complaints.");
 	}
 
 	// Create complaint
@@ -118,7 +116,7 @@ const getComplaintById = async (
 
 	// Throw an error if complaint does not exist
 	if (!complaint) {
-		throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
+		throw new Error("Complaint not found.");
 	}
 
 	return complaint;
@@ -228,11 +226,11 @@ const updateComplaint = async (
 		},
 	});
 
-	if (!complaint) throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
+	if (!complaint) throw new Error("Complaint not found.");
 
 	// Check complaint status
 	if (complaint.status !== ComplaintStatus.PENDING) {
-		throw new AppError(HttpStatus.BAD_REQUEST, "Only pending complaints can be edited.");
+		throw new Error("Only pending complaints can be edited.");
 	}
 
 	// Check category if categoryId is provided
@@ -241,14 +239,14 @@ const updateComplaint = async (
 			where: { id: data.categoryId },
 		});
 
-		if (!category) throw new AppError(HttpStatus.NOT_FOUND, "Category not found.");
+		if (!category) throw new Error("Category not found.");
 
 		if (!category.isActive) {
-			throw new AppError(HttpStatus.BAD_REQUEST, "This category is currently inactive.");
+			throw new Error("This category is currently inactive.");
 		}
 
 		if (category.type !== "COMPLAINT") {
-			throw new AppError(HttpStatus.BAD_REQUEST, "This category cannot be used for complaints.");
+			throw new Error("This category cannot be used for complaints.");
 		}
 	}
 
@@ -297,11 +295,11 @@ const assignComplaint = async (
 		},
 	});
 
-	if (!complaint) throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
+	if (!complaint) throw new Error("Complaint not found.");
 
 	// Check complaint status
 	if (complaint.status !== ComplaintStatus.PENDING) {
-		throw new AppError(HttpStatus.BAD_REQUEST, "Only pending complaints can be assigned.");
+		throw new Error("Only pending complaints can be assigned.");
 	}
 
 	// Check if officer exists
@@ -315,7 +313,7 @@ const assignComplaint = async (
 	});
 
 	if (!officer) {
-		throw new AppError(HttpStatus.NOT_FOUND, "Active officer not found.");
+		throw new Error("Active officer not found.");
 	}
 
 	// Check if complaint is already assigned
@@ -326,7 +324,7 @@ const assignComplaint = async (
 	});
 
 	if (existingAssignment) {
-		throw new AppError(HttpStatus.CONFLICT, "Complaint is already assigned.");
+		throw new Error("Complaint is already assigned.");
 	}
 
 	// Assign complaint and update status
@@ -436,7 +434,7 @@ const updateComplaintStatus = async (
 	});
 
 	if (!complaint) {
-		throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
+		throw new Error("Complaint not found.");
 	}
 
 	// Check officer assignment
@@ -448,7 +446,7 @@ const updateComplaintStatus = async (
 		});
 
 		if (!assignment || assignment.officerId !== userId) {
-			throw new AppError(HttpStatus.FORBIDDEN, "You are not assigned to this complaint.");
+			throw new Error("You are not assigned to this complaint.");
 		}
 	}
 
@@ -458,8 +456,7 @@ const updateComplaintStatus = async (
 		complaint.status === ComplaintStatus.ASSIGNED &&
 		newStatus !== ComplaintStatus.IN_PROGRESS
 	) {
-		throw new AppError(
-			HttpStatus.BAD_REQUEST,
+		throw new Error(
 			"Officer can only change an assigned complaint to in progress.",
 		);
 	}
@@ -469,8 +466,7 @@ const updateComplaintStatus = async (
 		complaint.status === ComplaintStatus.IN_PROGRESS &&
 		newStatus !== ComplaintStatus.RESOLVED
 	) {
-		throw new AppError(
-			HttpStatus.BAD_REQUEST,
+		throw new Error(
 			"Officer can only change an in progress complaint to resolved.",
 		);
 	}
@@ -480,7 +476,7 @@ const updateComplaintStatus = async (
 		(complaint.status !== ComplaintStatus.RESOLVED ||
 			newStatus !== ComplaintStatus.CLOSED)
 	) {
-		throw new AppError(HttpStatus.BAD_REQUEST, "Admin can only close a resolved complaint.");
+		throw new Error("Admin can only close a resolved complaint.");
 	}
 
 	// Update complaint status
@@ -542,13 +538,12 @@ const createComplaintResolution = async (
 	});
 
 	if (!complaint) {
-		throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
+		throw new Error("Complaint not found.");
 	}
 
 	// Check complaint status
 	if (complaint.status !== ComplaintStatus.IN_PROGRESS) {
-		throw new AppError(
-			HttpStatus.BAD_REQUEST,
+		throw new Error(
 			"Resolution can only be added to an in progress complaint.",
 		);
 	}
@@ -561,7 +556,7 @@ const createComplaintResolution = async (
 	});
 
 	if (!assignment || assignment.officerId !== officerId) {
-		throw new AppError(HttpStatus.FORBIDDEN, "You are not assigned to this complaint.");
+		throw new Error("You are not assigned to this complaint.");
 	}
 
 	// Check if resolution already exists
@@ -572,7 +567,7 @@ const createComplaintResolution = async (
 	});
 
 	if (existingResolution) {
-		throw new AppError(HttpStatus.CONFLICT, "Resolution already exists for this complaint.");
+		throw new Error("Resolution already exists for this complaint.");
 	}
 
 	// Create resolution and update complaint status
@@ -642,12 +637,12 @@ const deleteComplaint = async (complaintId: string, citizenId: string) => {
 	});
 
 	if (!complaint) {
-		throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
+		throw new Error("Complaint not found.");
 	}
 
 	// Check complaint status
 	if (complaint.status !== ComplaintStatus.PENDING) {
-		throw new AppError(HttpStatus.BAD_REQUEST, "Only pending complaints can be deleted.");
+		throw new Error("Only pending complaints can be deleted.");
 	}
 
 	// Soft delete complaint

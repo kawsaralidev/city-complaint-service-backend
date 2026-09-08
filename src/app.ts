@@ -4,6 +4,7 @@ import express, {
   type Request,
   type Response,
 } from "express";
+import { sendResponse } from "./app/utils/sendResponse";
 import cors from "cors";
 import { notFound } from "./app/middleware/notFound";
 import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
@@ -23,7 +24,6 @@ import { userRoutes } from "./app/modules/user/user.routes";
 import { dashboardRoutes } from "./app/modules/dashboard/dashboard.routes";
 
 const app = express();
-app.set("trust proxy", 1);
 
 app.use("/api/v1/payments/webhook", express.raw({ type: "application/json" }));
 
@@ -55,7 +55,8 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 
 // Basic route
 app.get("/", async (req: Request, res: Response) => {
-  res.status(200).json({
+  sendResponse(res, {
+		statusCode: 200,
     success: true,
     message: "City Complaint & Service Platform API is running",
     data: null,
@@ -64,7 +65,8 @@ app.get("/", async (req: Request, res: Response) => {
 
 app.get("/test", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.status(200).json({
+    sendResponse(res, {
+		statusCode: 200,
       success: true,
       message: "Welcome to City Complaint and Service Backend",
       data: null,

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { authService } from "./auth.service.js";
 import { HttpStatus } from "../../../constants/httpStatus.js";
 import { AppError } from "../../utils/AppError.js";
+import { sendResponse } from "../../utils/sendResponse.js";
 
 // Register User
 const register = async (req: Request, res: Response) => {
@@ -9,7 +10,8 @@ const register = async (req: Request, res: Response) => {
 	const result = await authService.register(req.body);
 
 	// Send registration response
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: result.message,
 		data: {
@@ -24,7 +26,8 @@ const verifyRegisterEmail = async (req: Request, res: Response) => {
 	const result = await authService.verifyRegisterEmail(req.body);
 
 	// Send email verification response
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: result.message,
 		data: result.user,
@@ -44,7 +47,8 @@ const login = async (req: Request, res: Response) => {
 	});
 
 	// Send access token and user information in response
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Login successful.",
 		data: {
@@ -82,7 +86,8 @@ const googleLogin = async (req: Request, res: Response) => {
 	});
 
 	// Send access token and user information
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Google login successful.",
 		data: {
@@ -101,7 +106,8 @@ const refreshAccessToken = async (req: Request, res: Response) => {
 	const result = await authService.refreshAccessToken(refreshToken);
 
 	// Send the new access token
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Access token refreshed successfully.",
 		data: {
@@ -123,7 +129,8 @@ const getCurrentUser = async (req: Request, res: Response) => {
 	// Get current user information
 	const result = await authService.getCurrentUser(userId);
 
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "User profile retrieved successfully.",
 		data: result,
@@ -134,7 +141,8 @@ const getCurrentUser = async (req: Request, res: Response) => {
 const logout = async (_req: Request, res: Response) => {
 	// Clear refresh token from HttpOnly cookie
 	res.clearCookie("refreshToken");
-	res.status(HttpStatus.OK).json({
+	sendResponse(res, {
+		statusCode: HttpStatus.OK,
 		success: true,
 		message: "Logout successful.",
 		data: null,
