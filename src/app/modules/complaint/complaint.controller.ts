@@ -4,6 +4,7 @@ import { complaintService } from "./complaint.service";
 import type { ComplaintStatus } from "../../../../generated/prisma/enums";
 import { uploadToCloudinary } from "../../utils/cloudinary";
 import { sendResponse } from "../../utils/sendResponse";
+import { AppError } from "../../utils/AppError";
 
 // Create Complaint
 const createComplaint = async (req: Request, res: Response) => {
@@ -12,7 +13,10 @@ const createComplaint = async (req: Request, res: Response) => {
 	const citizenId = req.user?.userId;
 
 	if (!citizenId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	let imageUrl: string | undefined;
@@ -48,7 +52,10 @@ const getMyComplaints = async (req: Request, res: Response) => {
 	const citizenId = req.user?.userId;
 
 	if (!citizenId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const complaints = await complaintService.getMyComplaints(citizenId);
@@ -68,7 +75,10 @@ const getComplaintById = async (req: Request, res: Response) => {
 	const role = req.user?.role;
 
 	if (!userId || !role) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const complaint = await complaintService.getComplaintById(
@@ -110,7 +120,11 @@ const updateComplaint = async (req: Request, res: Response) => {
 	const complaintId = req.params.id as string;
 	const citizenId = req.user?.userId;
 
-	if (!citizenId) throw new Error("Authenticated user not found.");
+	if (!citizenId)
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	let imageUrl: string | undefined;
 	let imagePublicId: string | undefined;
 
@@ -147,7 +161,10 @@ const assignComplaint = async (req: Request, res: Response) => {
 	const { officerId } = req.body;
 
 	if (!assignedBy) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const result = await complaintService.assignComplaint(
@@ -169,7 +186,10 @@ const getAssignedComplaints = async (req: Request, res: Response) => {
 	const officerId = req.user?.userId;
 
 	if (!officerId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const complaints = await complaintService.getAssignedComplaints(officerId);
@@ -190,7 +210,10 @@ const updateComplaintStatus = async (req: Request, res: Response) => {
 	const { status } = req.body;
 
 	if (!userId || !role) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const complaint = await complaintService.updateComplaintStatus(
@@ -208,43 +231,18 @@ const updateComplaintStatus = async (req: Request, res: Response) => {
 	});
 };
 
-// Add Complaint Resolution
-const createComplaintResolution = async (req: Request, res: Response) => {
-	const complaintId = req.params.id as string;
-	const officerId = req.user?.userId;
+const cancelComplaint = async (req: Request, res: Response) => {
+	const citizenId = req.user!.userId;
 
-	if (!officerId) {
-		throw new Error("Authenticated user not found.");
-	}
-
-	let imageUrl: string | undefined;
-	let imagePublicId: string | undefined;
-
-	// Upload resolution image to Cloudinary
-	if (req.file) {
-		const result = await uploadToCloudinary(
-			req.file.buffer,
-			"city-complaint-resolutions",
-		);
-
-		imageUrl = result.secure_url;
-		imagePublicId = result.public_id;
-	}
-
-	const result = await complaintService.createComplaintResolution(
-		complaintId,
-		officerId,
-		{
-			...req.body,
-			imageUrl,
-			imagePublicId,
-		},
+	const result = await complaintService.cancelComplaint(
+		req.params.id as string,
+		citizenId,
 	);
 
 	sendResponse(res, {
-		statusCode: HttpStatus.CREATED,
+		statusCode: HttpStatus.OK,
 		success: true,
-		message: "Complaint resolution added successfully.",
+		message: "Complaint canceled successfully.",
 		data: result,
 	});
 };
@@ -276,6 +274,6 @@ export const complaintController = {
 	assignComplaint,
 	getAssignedComplaints,
 	updateComplaintStatus,
-	createComplaintResolution,
+	cancelComplaint,
 	deleteComplaint,
 };

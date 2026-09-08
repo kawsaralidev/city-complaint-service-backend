@@ -5,7 +5,8 @@ import { validateRequest } from "../../middleware/validateRequest";
 import { complaintController } from "./complaint.controller";
 import {
 	assignComplaintSchema,
-	createComplaintResolutionSchema,
+	adminComplaintStatusSchema,
+	cancelComplaintSchema,
 	createComplaintSchema,
 	getAllComplaintsSchema,
 	updateComplaintSchema,
@@ -61,18 +62,24 @@ router.patch(
 );
 
 router.patch(
+	"/:id/admin-status",
+	auth(Role.ADMIN),
+	validateRequest(adminComplaintStatusSchema),
+	complaintController.updateComplaintStatus,
+);
+
+router.patch(
 	"/:id/status",
-	auth(Role.ADMIN, Role.OFFICER),
+	auth(Role.OFFICER),
 	validateRequest(updateComplaintStatusSchema),
 	complaintController.updateComplaintStatus,
 );
 
-router.post(
-	"/:id/resolution",
-	auth(Role.OFFICER),
-	upload.single("image"),
-	validateRequest(createComplaintResolutionSchema),
-	complaintController.createComplaintResolution,
+router.patch(
+	"/:id/cancel",
+	auth(Role.CITIZEN),
+	validateRequest(cancelComplaintSchema),
+	complaintController.cancelComplaint,
 );
 
 router.delete("/:id", auth(Role.CITIZEN), complaintController.deleteComplaint);

@@ -23,10 +23,10 @@ enum AuthProvider {
 
 enum ComplaintStatus {
   PENDING
+  APPROVED
   ASSIGNED
   IN_PROGRESS
-  RESOLVED
-  CLOSED
+  COMPLETED
   REJECTED
   CANCELED
 }

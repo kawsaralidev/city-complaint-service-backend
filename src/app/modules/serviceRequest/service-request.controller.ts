@@ -3,12 +3,16 @@ import { HttpStatus } from "../../../constants/httpStatus";
 import { serviceRequestService } from "./service-request.service";
 import { getAllServiceRequestsQuerySchema } from "./service-request.validation";
 import { sendResponse } from "../../utils/sendResponse";
+import { AppError } from "../../utils/AppError";
 
 const createServiceRequest = async (req: Request, res: Response) => {
 	const citizenId = req.user?.userId;
 
 	if (!citizenId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const serviceRequest = await serviceRequestService.createServiceRequest(
@@ -49,7 +53,10 @@ const getMyServiceRequests = async (req: Request, res: Response) => {
 	const citizenId = req.user?.userId;
 
 	if (!citizenId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const serviceRequests =
@@ -67,7 +74,10 @@ const getServiceRequestById = async (req: Request, res: Response) => {
 	const citizenId = req.user?.userId;
 
 	if (!citizenId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const id = req.params.id as string;
@@ -91,7 +101,10 @@ const UpdateServiceRequestStatus = async (req: Request, res: Response) => {
 	const adminId = req.user?.userId;
 
 	if (!adminId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const serviceRequest = await serviceRequestService.UpdateServiceRequestStatus(
@@ -113,7 +126,10 @@ const assignServiceRequest = async (req: Request, res: Response) => {
 	const adminId = req.user?.userId;
 
 	if (!adminId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const serviceRequestId = req.params.id as string;
@@ -139,7 +155,10 @@ const updateServiceRequestInProgressStatus = async (
 	const officerId = req.user?.userId;
 
 	if (!officerId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const serviceRequestId = req.params.id as string;

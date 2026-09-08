@@ -1,4 +1,6 @@
 import config from "../../config";
+import { HttpStatus } from "../../../constants/httpStatus";
+import { AppError } from "../../utils/AppError";
 import { prisma } from "../../lib/prisma";
 import stripe from "../../lib/stripe";
 import { createAuditLog } from "../../utils/auditLog";
@@ -23,17 +25,21 @@ const createPayment = async (
 
 	// Throw an error if service request does not exist
 	if (!serviceRequest) {
-		throw new Error("Service request not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Service request not found.");
 	}
 
 	// Check if service request is approved
 	if (serviceRequest.status !== "APPROVED") {
-		throw new Error("Only approved service requests can proceed to payment.");
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
+			"Only approved service requests can proceed to payment.",
+		);
 	}
 
 	// Throw an error if payment is already completed
 	if (serviceRequest.payment?.status === "PAID") {
-		throw new Error(
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
 			"Payment has already been completed for this service request.",
 		);
 	}
@@ -144,7 +150,10 @@ const handleStripeWebhook = async (signature: string, rawBody: Buffer) => {
 
 	// Throw an error if service request ID is missing
 	if (!serviceRequestId) {
-		throw new Error("Service request ID not found in Stripe metadata.");
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
+			"Service request ID not found in Stripe metadata.",
+		);
 	}
 
 	const paymentIntentId =
@@ -165,7 +174,7 @@ const handleStripeWebhook = async (signature: string, rawBody: Buffer) => {
 
 		// Throw an error if payment does not exist
 		if (!payment) {
-			throw new Error("Payment not found.");
+			throw new AppError(HttpStatus.NOT_FOUND, "Payment not found.");
 		}
 
 		// Ignore duplicate webhook events

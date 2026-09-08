@@ -37,10 +37,10 @@ export type AuthProvider = (typeof AuthProvider)[keyof typeof AuthProvider]
 
 export const ComplaintStatus = {
   PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
   ASSIGNED: 'ASSIGNED',
   IN_PROGRESS: 'IN_PROGRESS',
-  RESOLVED: 'RESOLVED',
-  CLOSED: 'CLOSED',
+  COMPLETED: 'COMPLETED',
   REJECTED: 'REJECTED',
   CANCELED: 'CANCELED'
 } as const

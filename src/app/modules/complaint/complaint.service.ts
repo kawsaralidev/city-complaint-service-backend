@@ -1,5 +1,7 @@
 import { ComplaintStatus, Role } from "../../../../generated/prisma/enums";
+import { HttpStatus } from "../../../constants/httpStatus";
 import { prisma } from "../../lib/prisma";
+import { AppError } from "../../utils/AppError";
 import { createAuditLog } from "../../utils/auditLog";
 import { deleteFromCloudinary } from "../../utils/cloudinary";
 
@@ -24,17 +26,23 @@ const createComplaint = async (
 
 	// Throw an error if category does not exist
 	if (!category) {
-		throw new Error("Category not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Category not found.");
 	}
 
 	// Throw an error if category is inactive
 	if (!category.isActive) {
-		throw new Error("This category is currently inactive.");
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
+			"This category is currently inactive.",
+		);
 	}
 
 	// Throw an error if category is not for complaints
 	if (category.type !== "COMPLAINT") {
-		throw new Error("This category cannot be used for complaints.");
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
+			"This category cannot be used for complaints.",
+		);
 	}
 
 	// Create complaint
@@ -116,7 +124,7 @@ const getComplaintById = async (
 
 	// Throw an error if complaint does not exist
 	if (!complaint) {
-		throw new Error("Complaint not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
 	}
 
 	return complaint;
@@ -226,11 +234,15 @@ const updateComplaint = async (
 		},
 	});
 
-	if (!complaint) throw new Error("Complaint not found.");
+	if (!complaint)
+		throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
 
 	// Check complaint status
 	if (complaint.status !== ComplaintStatus.PENDING) {
-		throw new Error("Only pending complaints can be edited.");
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
+			"Only pending complaints can be edited.",
+		);
 	}
 
 	// Check category if categoryId is provided
@@ -239,14 +251,21 @@ const updateComplaint = async (
 			where: { id: data.categoryId },
 		});
 
-		if (!category) throw new Error("Category not found.");
+		if (!category)
+			throw new AppError(HttpStatus.NOT_FOUND, "Category not found.");
 
 		if (!category.isActive) {
-			throw new Error("This category is currently inactive.");
+			throw new AppError(
+				HttpStatus.BAD_REQUEST,
+				"This category is currently inactive.",
+			);
 		}
 
 		if (category.type !== "COMPLAINT") {
-			throw new Error("This category cannot be used for complaints.");
+			throw new AppError(
+				HttpStatus.BAD_REQUEST,
+				"This category cannot be used for complaints.",
+			);
 		}
 	}
 
@@ -295,13 +314,16 @@ const assignComplaint = async (
 		},
 	});
 
-	if (!complaint) throw new Error("Complaint not found.");
+	if (!complaint)
+		throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
 
 	// Check complaint status
-	if (complaint.status !== ComplaintStatus.PENDING) {
-		throw new Error("Only pending complaints can be assigned.");
+	if (complaint.status !== ComplaintStatus.APPROVED) {
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
+			"Only approved complaints can be assigned.",
+		);
 	}
-
 	// Check if officer exists
 	const officer = await prisma.user.findFirst({
 		where: {
@@ -313,7 +335,7 @@ const assignComplaint = async (
 	});
 
 	if (!officer) {
-		throw new Error("Active officer not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Active officer not found.");
 	}
 
 	// Check if complaint is already assigned
@@ -324,7 +346,10 @@ const assignComplaint = async (
 	});
 
 	if (existingAssignment) {
-		throw new Error("Complaint is already assigned.");
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
+			"Complaint is already assigned.",
+		);
 	}
 
 	// Assign complaint and update status
@@ -406,7 +431,6 @@ const getAssignedComplaints = async (officerId: string) => {
 							email: true,
 						},
 					},
-					resolution: true,
 				},
 			},
 		},
@@ -434,7 +458,7 @@ const updateComplaintStatus = async (
 	});
 
 	if (!complaint) {
-		throw new Error("Complaint not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
 	}
 
 	// Check officer assignment
@@ -446,7 +470,10 @@ const updateComplaintStatus = async (
 		});
 
 		if (!assignment || assignment.officerId !== userId) {
-			throw new Error("You are not assigned to this complaint.");
+			throw new AppError(
+				HttpStatus.FORBIDDEN,
+				"You are not assigned to this complaint.",
+			);
 		}
 	}
 
@@ -456,27 +483,40 @@ const updateComplaintStatus = async (
 		complaint.status === ComplaintStatus.ASSIGNED &&
 		newStatus !== ComplaintStatus.IN_PROGRESS
 	) {
-		throw new Error(
-			"Officer can only change an assigned complaint to in progress.",
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
+			"Officer can only change assigned complaints to in-progress.",
 		);
 	}
 
 	if (
 		role === Role.OFFICER &&
 		complaint.status === ComplaintStatus.IN_PROGRESS &&
-		newStatus !== ComplaintStatus.RESOLVED
+		newStatus !== ComplaintStatus.COMPLETED
 	) {
-		throw new Error(
-			"Officer can only change an in progress complaint to resolved.",
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
+			"Officer can only change in-progress complaints to completed.",
 		);
 	}
 
-	if (
-		role === Role.ADMIN &&
-		(complaint.status !== ComplaintStatus.RESOLVED ||
-			newStatus !== ComplaintStatus.CLOSED)
-	) {
-		throw new Error("Admin can only close a resolved complaint.");
+	if (role === Role.ADMIN) {
+		if (complaint.status !== ComplaintStatus.PENDING) {
+			throw new AppError(
+				HttpStatus.BAD_REQUEST,
+				"Admin can only approve or reject pending complaints.",
+			);
+		}
+
+		if (
+			newStatus !== ComplaintStatus.APPROVED &&
+			newStatus !== ComplaintStatus.REJECTED
+		) {
+			throw new AppError(
+				HttpStatus.BAD_REQUEST,
+				"Admin can only approve or reject a pending complaint.",
+			);
+		}
 	}
 
 	// Update complaint status
@@ -486,7 +526,7 @@ const updateComplaintStatus = async (
 		},
 		data: {
 			status: newStatus,
-			...(newStatus === ComplaintStatus.RESOLVED && {
+			...(newStatus === ComplaintStatus.COMPLETED && {
 				resolvedAt: new Date(),
 			}),
 		},
@@ -519,110 +559,43 @@ const updateComplaintStatus = async (
 	return updatedComplaint;
 };
 
-// Add Complaint Resolution
-const createComplaintResolution = async (
-	complaintId: string,
-	officerId: string,
-	data: {
-		description: string;
-		imageUrl?: string;
-		imagePublicId?: string;
-	},
-) => {
-	// Check if complaint exists
+const cancelComplaint = async (complaintId: string, citizenId: string) => {
 	const complaint = await prisma.complaint.findFirst({
 		where: {
 			id: complaintId,
+			citizenId,
 			deletedAt: null,
 		},
 	});
 
 	if (!complaint) {
-		throw new Error("Complaint not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
 	}
 
-	// Check complaint status
-	if (complaint.status !== ComplaintStatus.IN_PROGRESS) {
-		throw new Error(
-			"Resolution can only be added to an in progress complaint.",
+	if (complaint.status !== ComplaintStatus.PENDING) {
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
+			"Only pending complaints can be canceled.",
 		);
 	}
 
-	// Check officer assignment
-	const assignment = await prisma.assignment.findUnique({
+	const updatedComplaint = await prisma.complaint.update({
 		where: {
-			complaintId,
+			id: complaintId,
+		},
+		data: {
+			status: ComplaintStatus.CANCELED,
 		},
 	});
 
-	if (!assignment || assignment.officerId !== officerId) {
-		throw new Error("You are not assigned to this complaint.");
-	}
-
-	// Check if resolution already exists
-	const existingResolution = await prisma.resolution.findUnique({
-		where: {
-			complaintId,
-		},
-	});
-
-	if (existingResolution) {
-		throw new Error("Resolution already exists for this complaint.");
-	}
-
-	// Create resolution and update complaint status
-	const result = await prisma.$transaction(async (tx) => {
-		const resolution = await tx.resolution.create({
-			data: {
-				complaintId,
-				officerId,
-				description: data.description,
-				imageUrl: data.imageUrl,
-				imagePublicId: data.imagePublicId,
-			},
-			include: {
-				officer: {
-					select: {
-						id: true,
-						name: true,
-						email: true,
-					},
-				},
-			},
-		});
-
-		const updatedComplaint = await tx.complaint.update({
-			where: {
-				id: complaintId,
-			},
-			data: {
-				status: ComplaintStatus.RESOLVED,
-				resolvedAt: resolution.resolvedAt,
-			},
-			include: {
-				category: true,
-				resolution: true,
-			},
-		});
-
-		return {
-			resolution,
-			complaint: updatedComplaint,
-		};
-	});
-
-	// Create audit log
 	await createAuditLog({
-		userId: officerId,
-		action: "CREATE_COMPLAINT_RESOLUTION",
+		userId: citizenId,
+		action: "CANCEL_COMPLAINT",
 		entity: "Complaint",
 		entityId: complaintId,
-		details: {
-			resolutionId: result.resolution.id,
-		},
 	});
 
-	return result;
+	return updatedComplaint;
 };
 
 // Delete Complaint
@@ -637,12 +610,15 @@ const deleteComplaint = async (complaintId: string, citizenId: string) => {
 	});
 
 	if (!complaint) {
-		throw new Error("Complaint not found.");
+		throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
 	}
 
 	// Check complaint status
 	if (complaint.status !== ComplaintStatus.PENDING) {
-		throw new Error("Only pending complaints can be deleted.");
+		throw new AppError(
+			HttpStatus.BAD_REQUEST,
+			"Only pending complaints can be deleted.",
+		);
 	}
 
 	// Soft delete complaint
@@ -678,6 +654,6 @@ export const complaintService = {
 	assignComplaint,
 	getAssignedComplaints,
 	updateComplaintStatus,
-	createComplaintResolution,
+	cancelComplaint,
 	deleteComplaint,
 };

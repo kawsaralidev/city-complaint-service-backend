@@ -1,8 +1,8 @@
 import "dotenv/config";
 import express, {
-  type NextFunction,
-  type Request,
-  type Response,
+	type NextFunction,
+	type Request,
+	type Response,
 } from "express";
 import { sendResponse } from "./app/utils/sendResponse";
 import cors from "cors";
@@ -28,10 +28,10 @@ const app = express();
 app.use("/api/v1/payments/webhook", express.raw({ type: "application/json" }));
 
 app.use(
-  cors({
-    origin: config.app_url,
-    credentials: true,
-  }),
+	cors({
+		origin: config.app_url,
+		credentials: true,
+	}),
 );
 
 app.use(helmet());
@@ -55,26 +55,26 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 
 // Basic route
 app.get("/", async (req: Request, res: Response) => {
-  sendResponse(res, {
+	sendResponse(res, {
 		statusCode: 200,
-    success: true,
-    message: "City Complaint & Service Platform API is running",
-    data: null,
-  });
+		success: true,
+		message: "City Complaint & Service Platform API is running",
+		data: null,
+	});
 });
 
 app.get("/test", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    sendResponse(res, {
-		statusCode: 200,
-      success: true,
-      message: "Welcome to City Complaint and Service Backend",
-      data: null,
-    });
-  } catch (error) {
-    console.log(error);
-    next(error);
-  }
+	try {
+		sendResponse(res, {
+			statusCode: 200,
+			success: true,
+			message: "Welcome to City Complaint and Service Backend",
+			data: null,
+		});
+	} catch (error) {
+		console.log(error);
+		next(error);
+	}
 });
 
 // 404

@@ -7,7 +7,10 @@ const createPayment = async (req: Request, res: Response) => {
 	const citizenId = req.user?.userId;
 
 	if (!citizenId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const payment = await paymentService.createPayment(citizenId, req.body);
@@ -25,7 +28,7 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
 	const signature = req.headers["stripe-signature"];
 
 	if (!signature || Array.isArray(signature)) {
-		throw new Error("Stripe signature is missing.");
+		throw new AppError(HttpStatus.BAD_REQUEST, "Stripe signature is missing.");
 	}
 
 	await paymentService.handleStripeWebhook(signature, req.body);
@@ -53,7 +56,10 @@ const getMyPayments = async (req: Request, res: Response) => {
 	const citizenId = req.user?.userId;
 
 	if (!citizenId) {
-		throw new Error("Authenticated user not found.");
+		throw new AppError(
+			HttpStatus.UNAUTHORIZED,
+			"Authenticated user not found.",
+		);
 	}
 
 	const payments = await paymentService.getMyPayments(citizenId);

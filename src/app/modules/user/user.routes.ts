@@ -3,9 +3,9 @@ import { auth } from "../../middleware/auth";
 import { Role } from "../../../../generated/prisma/enums";
 import { validateRequest } from "../../middleware/validateRequest";
 import {
-  getAllUsersQuerySchema,
-  updateProfileValidationSchema,
-  updateUserStatusSchema,
+	getAllUsersQuerySchema,
+	updateProfileValidationSchema,
+	updateUserStatusSchema,
 } from "./user.validation";
 import { userController } from "./user.controller";
 import { upload } from "../../lib/multer";
@@ -13,25 +13,25 @@ import { upload } from "../../lib/multer";
 const router = Router();
 
 router.get(
-  "/",
-  auth(Role.ADMIN),
-  validateRequest(getAllUsersQuerySchema),
-  userController.getAllUsers,
+	"/",
+	auth(Role.ADMIN),
+	validateRequest(getAllUsersQuerySchema),
+	userController.getAllUsers,
 );
 
 router.patch(
-  "/me",
-  auth(),
-  upload.single("image"),
-  validateRequest(updateProfileValidationSchema),
-  userController.updateMyProfile,
+	"/me",
+	auth(),
+	upload.single("image"),
+	validateRequest(updateProfileValidationSchema),
+	userController.updateMyProfile,
 );
 
 router.patch(
-  "/:id/status",
-  auth(Role.ADMIN),
-  validateRequest(updateUserStatusSchema),
-  userController.updateUserStatus,
+	"/:id/status",
+	auth(Role.ADMIN),
+	validateRequest(updateUserStatusSchema),
+	userController.updateUserStatus,
 );
 
 export const userRoutes = router;

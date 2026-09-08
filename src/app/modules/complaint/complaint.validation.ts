@@ -32,10 +32,10 @@ export const getAllComplaintsSchema = z.object({
 		status: z
 			.enum([
 				"PENDING",
+				"APPROVED",
 				"ASSIGNED",
 				"IN_PROGRESS",
-				"RESOLVED",
-				"CLOSED",
+				"COMPLETED",
 				"REJECTED",
 				"CANCELED",
 			])
@@ -100,18 +100,22 @@ export const updateComplaintStatusSchema = z.object({
 		id: z.string().uuid("Please provide a valid complaint ID"),
 	}),
 	body: z.object({
-		status: z.enum(["IN_PROGRESS", "RESOLVED", "CLOSED"]),
+		status: z.enum(["IN_PROGRESS", "COMPLETED"]),
 	}),
 });
 
-export const createComplaintResolutionSchema = z.object({
+export const adminComplaintStatusSchema = z.object({
 	params: z.object({
 		id: z.string().uuid("Please provide a valid complaint ID"),
 	}),
 	body: z.object({
-		description: z
-			.string()
-			.trim()
-			.min(10, "Resolution description must be at least 10 characters"),
+		status: z.enum(["APPROVED", "REJECTED"]),
+	}),
+});
+
+// new
+export const cancelComplaintSchema = z.object({
+	params: z.object({
+		id: z.string().uuid("Please provide a valid complaint ID"),
 	}),
 });
