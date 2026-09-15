@@ -3,158 +3,215 @@ import { authService } from "./auth.service.js";
 import { HttpStatus } from "../../../constants/httpStatus.js";
 import { AppError } from "../../utils/AppError.js";
 import { sendResponse } from "../../utils/sendResponse.js";
+import { jwtUtils } from "../../utils/jwt.js";
+import config from "../../config/index.js";
+import { JwtPayload } from "jsonwebtoken";
 
 // Register User
 const register = async (req: Request, res: Response) => {
-	// Get registration data from request body
-	const result = await authService.register(req.body);
+  // Get registration data from request body
+  const result = await authService.register(req.body);
 
-	// Send registration response
-	sendResponse(res, {
-		statusCode: HttpStatus.OK,
-		success: true,
-		message: result.message,
-		data: {
-			email: result.email,
-		},
-	});
+  // Send registration response
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: result.message,
+    data: {
+      email: result.email,
+    },
+  });
 };
 
 // Verify Registration Email
 const verifyRegisterEmail = async (req: Request, res: Response) => {
-	// Get email and OTP from request body
-	const result = await authService.verifyRegisterEmail(req.body);
+  // Get email and OTP from request body
+  const result = await authService.verifyRegisterEmail(req.body);
 
-	// Send email verification response
-	sendResponse(res, {
-		statusCode: HttpStatus.OK,
-		success: true,
-		message: result.message,
-		data: result.user,
-	});
+  // Send email verification response
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: result.message,
+    data: result.user,
+  });
 };
 
-// Login User
 const login = async (req: Request, res: Response) => {
-	// Get login credentials from request body
-	const result = await authService.login(req.body);
+  const result = await authService.login(req.body);
 
-	// Store refresh token in an HttpOnly cookie
-	res.cookie("refreshToken", result.refreshToken, {
-		httpOnly: true,
-		secure: process.env.NODE_ENV === "production",
-		sameSite: "lax",
-	});
+  // Set access token in HttpOnly cookie
+  res.cookie("accessToken", result.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
 
-	// Send access token and user information in response
-	sendResponse(res, {
-		statusCode: HttpStatus.OK,
-		success: true,
-		message: "Login successful.",
-		data: {
-			accessToken: result.accessToken,
-			user: result.user,
-		},
-	});
+  // Set refresh token in HttpOnly cookie
+  res.cookie("refreshToken", result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Login successful.",
+    data: {
+      user: result.user,
+    },
+  });
 };
 
 // Google Login
 const googleLogin = async (req: Request, res: Response) => {
-	// Get authenticated Google user
-	const user = req.user as
-		| {
-				id: string;
-		  }
-		| undefined;
+  // Get authenticated Google user
+  const user = req.user as
+    | {
+        id: string;
+      }
+    | undefined;
 
-	// Throw an error if Google user is missing
-	if (!user?.id) {
-		throw new AppError(
-			HttpStatus.UNAUTHORIZED,
-			"Google authentication failed.",
-		);
-	}
+  // Throw an error if Google user is missing
+  if (!user?.id) {
+    throw new AppError(
+      HttpStatus.UNAUTHORIZED,
+      "Google authentication failed.",
+    );
+  }
 
-	// Generate authentication tokens
-	const result = await authService.googleLogin(user.id);
+  // Generate authentication tokens
+  const result = await authService.googleLogin(user.id);
 
-	// Store refresh token in an HttpOnly cookie
-	res.cookie("refreshToken", result.refreshToken, {
-		httpOnly: true,
-		secure: process.env.NODE_ENV === "production",
-		sameSite: "lax",
-	});
+  // Store refresh token in an HttpOnly cookie
+  res.cookie("refreshToken", result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
 
-	// Send access token and user information
-	sendResponse(res, {
-		statusCode: HttpStatus.OK,
-		success: true,
-		message: "Google login successful.",
-		data: {
-			accessToken: result.accessToken,
-			user: result.user,
-		},
-	});
+  // Send access token and user information
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Google login successful.",
+    data: {
+      accessToken: result.accessToken,
+      user: result.user,
+    },
+  });
 };
 
 // Refresh Access Token
 const refreshAccessToken = async (req: Request, res: Response) => {
-	// Get refresh token from HttpOnly cookie
-	const { refreshToken } = req.cookies;
+  const { refreshToken } = req.cookies;
 
-	// Generate a new access token
-	const result = await authService.refreshAccessToken(refreshToken);
+  const result = await authService.refreshAccessToken(refreshToken);
 
-	// Send the new access token
-	sendResponse(res, {
-		statusCode: HttpStatus.OK,
-		success: true,
-		message: "Access token refreshed successfully.",
-		data: {
-			accessToken: result.accessToken,
-		},
-	});
+  // Update access token in HttpOnly cookie
+  res.cookie("accessToken", result.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Access token refreshed successfully.",
+    data: null,
+  });
 };
 
 // Get Current User
 const getCurrentUser = async (req: Request, res: Response) => {
-	// Get authenticated user ID from request
-	const userId = req.user?.userId;
+  // Get authenticated user ID from request
+  let userId = req.user?.userId;
 
-	// Throw an error if authenticated user information is missing
-	if (!userId) {
-		throw new AppError(HttpStatus.UNAUTHORIZED, "Authentication required.");
-	}
+  // Refresh access token if the current access token is missing or expired
+  if (!userId) {
+    const { refreshToken } = req.cookies;
 
-	// Get current user information
-	const result = await authService.getCurrentUser(userId);
+    if (!refreshToken) {
+      return sendResponse(res, {
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: "No authenticated user.",
+        data: null,
+      });
+    }
 
-	sendResponse(res, {
-		statusCode: HttpStatus.OK,
-		success: true,
-		message: "User profile retrieved successfully.",
-		data: result,
-	});
+    try {
+      const result = await authService.refreshAccessToken(refreshToken);
+
+      // Set new access token in HttpOnly cookie
+      res.cookie("accessToken", result.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+      });
+
+      // Verify the new access token
+      const verifiedToken = jwtUtils.verifyToken(
+        result.accessToken,
+        config.jwt_access_secret,
+      );
+
+      if (!verifiedToken.success) {
+        return sendResponse(res, {
+          statusCode: HttpStatus.OK,
+          success: true,
+          message: "No authenticated user.",
+          data: null,
+        });
+      }
+
+      const payload = verifiedToken.data as JwtPayload & {
+        userId: string;
+      };
+
+      userId = payload.userId;
+    } catch {
+      return sendResponse(res, {
+        statusCode: HttpStatus.OK,
+        success: true,
+        message: "No authenticated user.",
+        data: null,
+      });
+    }
+  }
+
+  // Get current user information
+  const result = await authService.getCurrentUser(userId);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "User profile retrieved successfully.",
+    data: result,
+  });
 };
 
 // Logout User
 const logout = async (_req: Request, res: Response) => {
-	// Clear refresh token from HttpOnly cookie
-	res.clearCookie("refreshToken");
-	sendResponse(res, {
-		statusCode: HttpStatus.OK,
-		success: true,
-		message: "Logout successful.",
-		data: null,
-	});
+  // Clear refresh token from HttpOnly cookie
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Logout successful.",
+    data: null,
+  });
 };
 
 export const authController = {
-	register,
-	verifyRegisterEmail,
-	login,
-	googleLogin,
-	refreshAccessToken,
-	getCurrentUser,
-	logout,
+  register,
+  verifyRegisterEmail,
+  login,
+  googleLogin,
+  refreshAccessToken,
+  getCurrentUser,
+  logout,
 };
