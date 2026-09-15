@@ -25,10 +25,22 @@ const register = async (req: Request, res: Response) => {
 
 // Verify Registration Email
 const verifyRegisterEmail = async (req: Request, res: Response) => {
-  // Get email and OTP from request body
   const result = await authService.verifyRegisterEmail(req.body);
 
-  // Send email verification response
+  // Set access token in HttpOnly cookie
+  res.cookie("accessToken", result.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
+  // Set refresh token in HttpOnly cookie
+  res.cookie("refreshToken", result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
