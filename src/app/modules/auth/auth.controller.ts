@@ -77,6 +77,7 @@ const login = async (req: Request, res: Response) => {
 };
 
 // Google Login
+
 const googleLogin = async (req: Request, res: Response) => {
   // Get authenticated Google user
   const user = req.user as
@@ -96,6 +97,13 @@ const googleLogin = async (req: Request, res: Response) => {
   // Generate authentication tokens
   const result = await authService.googleLogin(user.id);
 
+  // Store access token in an HttpOnly cookie
+  res.cookie("accessToken", result.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
   // Store refresh token in an HttpOnly cookie
   res.cookie("refreshToken", result.refreshToken, {
     httpOnly: true,
@@ -103,16 +111,8 @@ const googleLogin = async (req: Request, res: Response) => {
     sameSite: "lax",
   });
 
-  // Send access token and user information
-  sendResponse(res, {
-    statusCode: HttpStatus.OK,
-    success: true,
-    message: "Google login successful.",
-    data: {
-      accessToken: result.accessToken,
-      user: result.user,
-    },
-  });
+  // Redirect user to frontend home page
+  res.redirect(`${process.env.FRONTEND_URL}/`);
 };
 
 // Refresh Access Token
