@@ -136,10 +136,22 @@ const updateCategoryStatus = async (id: string, isActive: boolean) => {
   return category;
 };
 
+// Get all categories for admin
+const getAllCategoriesForAdmin = async () => {
+  const categories = await prisma.category.findMany({
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  return categories;
+};
+
 export const categoryService = {
   createCategory,
   getAllCategories,
   getCategoryById,
   updateCategory,
   updateCategoryStatus,
+  getAllCategoriesForAdmin,
 };

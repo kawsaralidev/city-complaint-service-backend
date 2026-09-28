@@ -5,77 +5,90 @@ import { sendResponse } from "../../utils/sendResponse";
 
 // Create Category
 const createCategory = async (req: Request, res: Response) => {
-	const { name, type } = req.body;
+  const { name, type } = req.body;
 
-	const category = await categoryService.createCategory(name, type);
+  const category = await categoryService.createCategory(name, type);
 
-	sendResponse(res, {
-		statusCode: HttpStatus.CREATED,
-		success: true,
-		message: "Category created successfully.",
-		data: category,
-	});
+  sendResponse(res, {
+    statusCode: HttpStatus.CREATED,
+    success: true,
+    message: "Category created successfully.",
+    data: category,
+  });
 };
 
 // Get all active categories
 const getAllCategories = async (req: Request, res: Response) => {
-	const categories = await categoryService.getAllCategories();
+  const categories = await categoryService.getAllCategories();
 
-	sendResponse(res, {
-		statusCode: HttpStatus.OK,
-		success: true,
-		message: "Categories retrieved successfully.",
-		data: categories,
-	});
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Categories retrieved successfully.",
+    data: categories,
+  });
 };
 
 // Get category by ID
 const getCategoryById = async (req: Request, res: Response) => {
-	const id = req.params.id as string;
+  const id = req.params.id as string;
 
-	const category = await categoryService.getCategoryById(id);
+  const category = await categoryService.getCategoryById(id);
 
-	sendResponse(res, {
-		statusCode: HttpStatus.OK,
-		success: true,
-		message: "Category retrieved successfully.",
-		data: category,
-	});
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Category retrieved successfully.",
+    data: category,
+  });
 };
 
 // Update category
 const updateCategory = async (req: Request, res: Response) => {
-	const id = req.params.id as string;
+  const id = req.params.id as string;
 
-	const category = await categoryService.updateCategory(id, req.body);
+  const category = await categoryService.updateCategory(id, req.body);
 
-	sendResponse(res, {
-		statusCode: HttpStatus.OK,
-		success: true,
-		message: "Category updated successfully.",
-		data: category,
-	});
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Category updated successfully.",
+    data: category,
+  });
 };
 
 // Update category status
 const updateCategoryStatus = async (req: Request, res: Response) => {
-	const id = req.params.id as string;
-	const { isActive } = req.body;
+  const id = req.params.id as string;
+  const { isActive } = req.body;
 
-	const category = await categoryService.updateCategoryStatus(id, isActive);
+  const category = await categoryService.updateCategoryStatus(id, isActive);
 
-	sendResponse(res, {
-		statusCode: HttpStatus.OK,
-		success: true,
-		message: "Category status updated successfully.",
-		data: category,
-	});
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Category status updated successfully.",
+    data: category,
+  });
+};
+
+// Get all categories for admin
+const getAllCategoriesForAdmin = async (req: Request, res: Response) => {
+  const categories = await categoryService.getAllCategoriesForAdmin();
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "All categories retrieved successfully.",
+    data: categories,
+  });
 };
 
 export const categoryController = {
-	createCategory,
-	getAllCategories,
-	getCategoryById,
-	updateCategory,
-	updateCategoryStatus,
+  createCategory,
+  getAllCategories,
+  getCategoryById,
+  updateCategory,
+  updateCategoryStatus,
+  getAllCategoriesForAdmin,
 };
