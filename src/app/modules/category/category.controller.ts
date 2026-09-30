@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { categoryService } from "./category.service";
 import { sendResponse } from "../../utils/sendResponse";
+import { AppError } from "../../utils/AppError";
 
 // Create Category
 const createCategory = async (req: Request, res: Response) => {
@@ -19,7 +20,13 @@ const createCategory = async (req: Request, res: Response) => {
 
 // Get all active categories
 const getAllCategories = async (req: Request, res: Response) => {
-  const categories = await categoryService.getAllCategories();
+  const role = req.user?.role;
+
+  if (!role) {
+    throw new AppError(HttpStatus.UNAUTHORIZED, "You are not authenticated.");
+  }
+
+  const categories = await categoryService.getAllCategories(role);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

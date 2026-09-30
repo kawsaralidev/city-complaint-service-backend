@@ -1,4 +1,4 @@
-import type { CategoryType } from "../../../../generated/prisma/enums";
+import { Role, type CategoryType } from "../../../../generated/prisma/enums";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
@@ -32,10 +32,12 @@ const createCategory = async (name: string, type: CategoryType) => {
 };
 
 // Get active categories
-const getAllCategories = async () => {
+const getAllCategories = async (role: Role) => {
   const categories = await prisma.category.findMany({
     where: {
-      isActive: true,
+      ...(role !== Role.ADMIN && {
+        isActive: true,
+      }),
     },
     orderBy: {
       name: "asc",

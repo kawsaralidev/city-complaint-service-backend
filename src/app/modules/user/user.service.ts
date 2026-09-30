@@ -28,7 +28,6 @@ const getAllUsers = async ({
 }: IGetAllUsersParams) => {
   const skip = (page - 1) * limit;
 
-  // Build user filters
   const where = {
     ...(status === "DELETED"
       ? {
@@ -65,7 +64,6 @@ const getAllUsers = async ({
     }),
   };
 
-  // Get users and total count
   const [users, total] = await Promise.all([
     prisma.user.findMany({
       where,
@@ -93,8 +91,67 @@ const getAllUsers = async ({
     }),
   ]);
 
+  // Get all officers from the current page
+  const officerIds = users
+    .filter((user) => user.role === "OFFICER")
+    .map((user) => user.id);
+
+  // Find officers who currently have active assignments
+  const activeAssignments =
+    officerIds.length > 0
+      ? await prisma.assignment.findMany({
+          where: {
+            officerId: {
+              in: officerIds,
+            },
+            OR: [
+              {
+                complaint: {
+                  status: {
+                    in: [ComplaintStatus.ASSIGNED, ComplaintStatus.IN_PROGRESS],
+                  },
+                  deletedAt: null,
+                },
+              },
+              {
+                serviceRequest: {
+                  status: {
+                    in: [
+                      ServiceRequestStatus.ASSIGNED,
+                      ServiceRequestStatus.IN_PROGRESS,
+                    ],
+                  },
+                  deletedAt: null,
+                },
+              },
+            ],
+          },
+          select: {
+            officerId: true,
+          },
+        })
+      : [];
+
+  const unavailableOfficerIds = new Set(
+    activeAssignments.map((assignment) => assignment.officerId),
+  );
+
+  const usersWithAvailability = users.map((user) => {
+    if (user.role !== "OFFICER") {
+      return {
+        ...user,
+        isAvailable: null,
+      };
+    }
+
+    return {
+      ...user,
+      isAvailable: !unavailableOfficerIds.has(user.id),
+    };
+  });
+
   return {
-    data: users,
+    data: usersWithAvailability,
     pagination: {
       page,
       limit,
