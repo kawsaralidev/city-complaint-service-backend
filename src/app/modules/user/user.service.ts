@@ -13,6 +13,10 @@ import type {
 } from "./user.interface";
 import bcrypt from "bcryptjs";
 import config from "../../config";
+import {
+  ComplaintStatus,
+  ServiceRequestStatus,
+} from "../../../../generated/prisma/enums";
 
 const getAllUsers = async ({
   page,
@@ -298,9 +302,41 @@ const updateMyProfile = async (
   return updatedUser;
 };
 
+const isOfficerAvailable = async (officerId: string) => {
+  const activeAssignment = await prisma.assignment.findFirst({
+    where: {
+      officerId,
+      OR: [
+        {
+          complaint: {
+            status: {
+              in: [ComplaintStatus.ASSIGNED, ComplaintStatus.IN_PROGRESS],
+            },
+            deletedAt: null,
+          },
+        },
+        {
+          serviceRequest: {
+            status: {
+              in: [
+                ServiceRequestStatus.ASSIGNED,
+                ServiceRequestStatus.IN_PROGRESS,
+              ],
+            },
+            deletedAt: null,
+          },
+        },
+      ],
+    },
+  });
+
+  return !activeAssignment;
+};
+
 export const userService = {
   getAllUsers,
   updateUserStatus,
   changePassword,
   updateMyProfile,
+  isOfficerAvailable,
 };

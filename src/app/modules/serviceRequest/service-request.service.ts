@@ -11,6 +11,7 @@ import type {
   IReviewServiceRequestPayload,
   IUpdateServiceRequestStatusInProgressPayload,
 } from "./service-request.interface";
+import { userService } from "../user/user.service";
 
 const createServiceRequest = async (
   citizenId: string,
@@ -379,6 +380,20 @@ const assignServiceRequest = async (
       deletedAt: null,
     },
   });
+
+  if (!officer) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Active officer not found.");
+  }
+
+  // Check officer availability
+  const officerAvailable = await userService.isOfficerAvailable(officer.id);
+
+  if (!officerAvailable) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Officer is currently unavailable.",
+    );
+  }
 
   // Throw an error if officer does not exist
   if (!officer) {

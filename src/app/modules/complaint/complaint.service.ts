@@ -4,6 +4,7 @@ import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import { createAuditLog } from "../../utils/auditLog";
 import { deleteFromCloudinary } from "../../utils/cloudinary";
+import { userService } from "../user/user.service";
 
 // Create Complaint
 const createComplaint = async (
@@ -340,8 +341,9 @@ const assignComplaint = async (
     },
   });
 
-  if (!complaint)
+  if (!complaint) {
     throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
+  }
 
   // Check complaint status
   if (complaint.status !== ComplaintStatus.APPROVED) {
@@ -350,6 +352,7 @@ const assignComplaint = async (
       "Only approved complaints can be assigned.",
     );
   }
+
   // Check if officer exists
   const officer = await prisma.user.findFirst({
     where: {
@@ -362,6 +365,16 @@ const assignComplaint = async (
 
   if (!officer) {
     throw new AppError(HttpStatus.NOT_FOUND, "Active officer not found.");
+  }
+
+  // Check officer availability
+  const officerAvailable = await userService.isOfficerAvailable(officerId);
+
+  if (!officerAvailable) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Officer is currently unavailable.",
+    );
   }
 
   // Check if complaint is already assigned
