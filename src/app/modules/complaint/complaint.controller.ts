@@ -96,23 +96,27 @@ const getComplaintById = async (req: Request, res: Response) => {
 
 // Get all complaints
 const getAllComplaints = async (req: Request, res: Response) => {
-  const result = await complaintService.getAllComplaints({
-    page: req.query.page ? Number(req.query.page) : undefined,
+  const userId = req.user?.userId;
+  const role = req.user?.role;
 
-    limit: req.query.limit ? Number(req.query.limit) : undefined,
+  if (!userId || !role) {
+    throw new AppError(
+      HttpStatus.UNAUTHORIZED,
+      "Authenticated user not found.",
+    );
+  }
 
-    search: typeof req.query.search === "string" ? req.query.search : undefined,
-
-    status:
-      typeof req.query.status === "string"
-        ? (req.query.status as ComplaintStatus)
-        : undefined,
-
-    categoryId:
-      typeof req.query.categoryId === "string"
-        ? req.query.categoryId
-        : undefined,
-  });
+  const result = await complaintService.getAllComplaints(
+    req.query as {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: ComplaintStatus;
+      categoryId?: string;
+    },
+    role,
+    userId,
+  );
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
