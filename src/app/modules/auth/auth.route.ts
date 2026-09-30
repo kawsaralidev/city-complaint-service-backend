@@ -4,8 +4,10 @@ import { authController } from "./auth.controller";
 import { validateRequest } from "../../middleware/validateRequest";
 import {
   demoLoginSchema,
+  forgotPasswordSchema,
   loginSchema,
   registerSchema,
+  resetPasswordSchema,
   verifyRegistrationSchema,
 } from "./auth.validation";
 import { optionalAuth } from "../../middleware/auth";
@@ -41,6 +43,19 @@ router.post(
   authRateLimiter,
   validateRequest(demoLoginSchema),
   authController.demoLogin,
+);
+
+router.post(
+  "/forgot-password",
+  authRateLimiter,
+  validateRequest(forgotPasswordSchema),
+  authController.forgotPassword,
+);
+
+router.post(
+  "/reset-password",
+  validateRequest(resetPasswordSchema),
+  authController.resetPassword,
 );
 
 router.post("/refresh-token", authController.refreshAccessToken);

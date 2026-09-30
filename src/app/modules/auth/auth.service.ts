@@ -733,6 +733,152 @@ const getCurrentUser = async (userId: string) => {
   };
 };
 
+const hashResetToken = async (token: string) => {
+  const hashBuffer = await globalThis.crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(token),
+  );
+
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+};
+
+// Forgot Password
+const forgotPassword = async (email: string) => {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const user = await prisma.user.findUnique({
+    where: {
+      email: normalizedEmail,
+    },
+  });
+
+  // Do not reveal whether an email exists or not
+  if (!user || user.deletedAt || user.status === "BLOCKED") {
+    return {
+      message:
+        "If an account exists with this email, a password reset link has been sent.",
+    };
+  }
+
+  // Generate a secure random reset token
+  const randomBytes = new Uint8Array(32);
+  globalThis.crypto.getRandomValues(randomBytes);
+
+  const resetToken = Array.from(randomBytes)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+
+  const hashedToken = await hashResetToken(resetToken);
+
+  const resetTokenKey = `password-reset:${hashedToken}`;
+
+  // Store user ID in Redis for 15 minutes
+  await redisClient.set(resetTokenKey, user.id, {
+    EX: 900,
+  });
+
+  // Reset password link
+  const resetLink = `${config.frontend_url}/reset-password?token=${resetToken}`;
+
+  // Send reset link to user's email
+  await transporter.sendMail({
+    from: `"City Complaint Service" <${config.smtp_user}>`,
+    to: normalizedEmail,
+    subject: "Reset Your Password - City Complaint Service",
+    html: `
+      <h2>Password Reset Request</h2>
+
+      <p>Hello ${user.name},</p>
+
+      <p>
+        We received a request to reset your password.
+      </p>
+
+      <p>
+        Click the button below to create a new password:
+      </p>
+
+      <p>
+        <a
+          href="${resetLink}"
+          style="
+            display: inline-block;
+            padding: 12px 20px;
+            background-color: #2563eb;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+          "
+        >
+          Reset Password
+        </a>
+      </p>
+
+      <p>
+        This password reset link will expire in 15 minutes.
+      </p>
+
+      <p>
+        If you did not request a password reset, you can safely ignore this email.
+      </p>
+    `,
+  });
+
+  return {
+    message:
+      "If an account exists with this email, a password reset link has been sent.",
+  };
+};
+
+const resetPassword = async (token: string, newPassword: string) => {
+  const hashedToken = await hashResetToken(token);
+
+  const resetTokenKey = `password-reset:${hashedToken}`;
+
+  const userId = await redisClient.get(resetTokenKey);
+
+  if (!userId) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Password reset link is invalid or expired.",
+    );
+  }
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+
+  if (!user || user.deletedAt) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Password reset link is invalid or expired.",
+    );
+  }
+
+  const hashedPassword = await bcrypt.hash(
+    newPassword,
+    Number(config.bcrypt_salt_rounds),
+  );
+
+  await prisma.user.update({
+    where: {
+      id: user.id,
+    },
+    data: {
+      password: hashedPassword,
+    },
+  });
+
+  // Make the reset token unusable after successful password reset
+  await redisClient.del(resetTokenKey);
+
+  return null;
+};
+
 export const authService = {
   register,
   verifyRegisterEmail,
@@ -741,4 +887,6 @@ export const authService = {
   googleLogin,
   refreshAccessToken,
   getCurrentUser,
+  forgotPassword,
+  resetPassword,
 };
