@@ -6,6 +6,7 @@ import { sendResponse } from "../../utils/sendResponse.js";
 import { jwtUtils } from "../../utils/jwt.js";
 import config from "../../config/index.js";
 import { JwtPayload } from "jsonwebtoken";
+import { catchAsync } from "../../utils/catchAsync.js";
 
 // Register User
 const register = async (req: Request, res: Response) => {
@@ -75,6 +76,33 @@ const login = async (req: Request, res: Response) => {
     },
   });
 };
+
+const demoLogin = catchAsync(async (req: Request, res: Response) => {
+  const { role } = req.body;
+
+  const result = await authService.demoLogin(role);
+
+  res.cookie("accessToken", result.accessToken, {
+    httpOnly: true,
+    secure: config.node_env === "production",
+    sameSite: "lax",
+  });
+
+  res.cookie("refreshToken", result.refreshToken, {
+    httpOnly: true,
+    secure: config.node_env === "production",
+    sameSite: "lax",
+  });
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Demo login successful.",
+    data: {
+      user: result.user,
+    },
+  });
+});
 
 // Google Login
 
@@ -222,6 +250,7 @@ export const authController = {
   register,
   verifyRegisterEmail,
   login,
+  demoLogin,
   googleLogin,
   refreshAccessToken,
   getCurrentUser,

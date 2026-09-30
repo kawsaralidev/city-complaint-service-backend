@@ -3,6 +3,7 @@ import { Router } from "express";
 import { authController } from "./auth.controller";
 import { validateRequest } from "../../middleware/validateRequest";
 import {
+  demoLoginSchema,
   loginSchema,
   registerSchema,
   verifyRegistrationSchema,
@@ -33,6 +34,13 @@ router.post(
   authRateLimiter,
   validateRequest(loginSchema),
   authController.login,
+);
+
+router.post(
+  "/demo-login",
+  authRateLimiter,
+  validateRequest(demoLoginSchema),
+  authController.demoLogin,
 );
 
 router.post("/refresh-token", authController.refreshAccessToken);

@@ -465,6 +465,99 @@ const login = async (payload: { email: string; password: string }) => {
   };
 };
 
+// Demo Login
+const demoLogin = async (role: "CITIZEN" | "OFFICER" | "ADMIN") => {
+  const demoEmailMap = {
+    CITIZEN: config.demo_citizen_email,
+    OFFICER: config.demo_officer_email,
+    ADMIN: config.demo_admin_email,
+  };
+
+  const demoEmail = demoEmailMap[role];
+
+  if (!demoEmail) {
+    throw new AppError(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      "Demo account is not configured.",
+    );
+  }
+
+  // Find the configured demo user
+  const user = await prisma.user.findUnique({
+    where: {
+      email: demoEmail,
+    },
+  });
+
+  // Make sure the configured demo account exists
+  if (!user) {
+    throw new AppError(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      "Demo account not found.",
+    );
+  }
+
+  // Make sure the database role matches the requested demo role
+  if (user.role !== role) {
+    throw new AppError(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      "Demo account role configuration is invalid.",
+    );
+  }
+
+  // Check if user account is deleted
+  if (user.deletedAt) {
+    throw new AppError(
+      HttpStatus.UNAUTHORIZED,
+      "This demo account is no longer available.",
+    );
+  }
+
+  // Check if user account is blocked
+  if (user.status === "BLOCKED") {
+    throw new AppError(
+      HttpStatus.FORBIDDEN,
+      "This demo account has been blocked.",
+    );
+  }
+
+  // Create access token
+  const accessToken = jwtUtils.createToken(
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    config.jwt_access_secret,
+    config.jwt_access_expires_in as SignOptions["expiresIn"],
+  );
+
+  // Create refresh token
+  const refreshToken = jwtUtils.createToken(
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    config.jwt_refresh_secret,
+    config.jwt_refresh_expires_in as SignOptions["expiresIn"],
+  );
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      emailVerified: user.emailVerified,
+      imageUrl: user.imageUrl,
+    },
+  };
+};
+
 // Google Login
 const googleLogin = async (userId: string) => {
   // Find authenticated Google user
@@ -644,6 +737,7 @@ export const authService = {
   register,
   verifyRegisterEmail,
   login,
+  demoLogin,
   googleLogin,
   refreshAccessToken,
   getCurrentUser,
