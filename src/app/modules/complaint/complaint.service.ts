@@ -152,11 +152,19 @@ const getAllComplaints = async (
     search?: string;
     status?: ComplaintStatus;
     categoryId?: string;
+    sortOrder?: "asc" | "desc";
   },
   role: Role,
   userId: string,
 ) => {
-  const { page = 1, limit = 10, search, status, categoryId } = query;
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    status,
+    categoryId,
+    sortOrder = "desc",
+  } = query;
 
   const skip = (page - 1) * limit;
 
@@ -217,7 +225,7 @@ const getAllComplaints = async (
         resolution: true,
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: sortOrder,
       },
       skip,
       take: limit,

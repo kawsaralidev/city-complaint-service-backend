@@ -7,8 +7,9 @@ import { AppError } from "../../utils/AppError";
 // Create Category
 const createCategory = async (req: Request, res: Response) => {
   const { name, type } = req.body;
+  const userId = req.user?.userId as string;
 
-  const category = await categoryService.createCategory(name, type);
+  const category = await categoryService.createCategory(name, type, userId);
 
   sendResponse(res, {
     statusCode: HttpStatus.CREATED,
@@ -53,8 +54,9 @@ const getCategoryById = async (req: Request, res: Response) => {
 // Update category
 const updateCategory = async (req: Request, res: Response) => {
   const id = req.params.id as string;
+  const userId = req.user?.userId as string;
 
-  const category = await categoryService.updateCategory(id, req.body);
+  const category = await categoryService.updateCategory(id, req.body, userId);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -68,8 +70,13 @@ const updateCategory = async (req: Request, res: Response) => {
 const updateCategoryStatus = async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const { isActive } = req.body;
+  const userId = req.user?.userId as string;
 
-  const category = await categoryService.updateCategoryStatus(id, isActive);
+  const category = await categoryService.updateCategoryStatus(
+    id,
+    isActive,
+    userId,
+  );
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

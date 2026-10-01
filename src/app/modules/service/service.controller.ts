@@ -5,7 +5,9 @@ import { getServicesQuerySchema } from "./service.validation";
 import { sendResponse } from "../../utils/sendResponse";
 
 const createService = async (req: Request, res: Response) => {
-  const service = await serviceService.createService(req.body);
+  const body = req.body;
+  const userId = req.user?.userId as string;
+  const service = await serviceService.createService(body, userId);
 
   sendResponse(res, {
     statusCode: HttpStatus.CREATED,
@@ -57,8 +59,13 @@ const getAllServices = async (req: Request, res: Response) => {
 
 const updateService = async (req: Request, res: Response) => {
   const serviceId = req.params.id as string;
+  const userId = req.user?.userId as string;
 
-  const service = await serviceService.updateService(serviceId, req.body);
+  const service = await serviceService.updateService(
+    serviceId,
+    req.body,
+    userId,
+  );
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

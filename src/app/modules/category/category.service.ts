@@ -2,9 +2,14 @@ import { Role, type CategoryType } from "../../../../generated/prisma/enums";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
+import { createAuditLog } from "../../utils/auditLog";
 
 // Create Category
-const createCategory = async (name: string, type: CategoryType) => {
+const createCategory = async (
+  name: string,
+  type: CategoryType,
+  userId: string,
+) => {
   // Check if category already exists
   const existingCategory = await prisma.category.findUnique({
     where: {
@@ -25,6 +30,17 @@ const createCategory = async (name: string, type: CategoryType) => {
     data: {
       name,
       type,
+    },
+  });
+
+  await createAuditLog({
+    userId,
+    action: "CREATE_CATEGORY",
+    entity: "Category",
+    entityId: category.id,
+    details: {
+      name: category.name,
+      type: category.type,
     },
   });
 
@@ -71,6 +87,7 @@ const updateCategory = async (
     name?: string;
     type?: CategoryType;
   },
+  userId: string,
 ) => {
   // Check if category exists
   const existingCategory = await prisma.category.findUnique({
@@ -108,11 +125,25 @@ const updateCategory = async (
     data,
   });
 
+  await createAuditLog({
+    userId,
+    action: "UPDATE_CATEGORY",
+    entity: "Category",
+    entityId: category.id,
+    details: {
+      changes: data,
+    },
+  });
+
   return category;
 };
 
 // Update category status
-const updateCategoryStatus = async (id: string, isActive: boolean) => {
+const updateCategoryStatus = async (
+  id: string,
+  isActive: boolean,
+  userId: string,
+) => {
   // Check if category exists
   const existingCategory = await prisma.category.findUnique({
     where: {
@@ -131,6 +162,16 @@ const updateCategoryStatus = async (id: string, isActive: boolean) => {
       id,
     },
     data: {
+      isActive,
+    },
+  });
+
+  await createAuditLog({
+    userId,
+    action: "UPDATE_CATEGORY_STATUS",
+    entity: "Category",
+    entityId: category.id,
+    details: {
       isActive,
     },
   });

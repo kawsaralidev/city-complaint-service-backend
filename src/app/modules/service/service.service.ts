@@ -2,12 +2,16 @@ import { prisma } from "../../lib/prisma";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { AppError } from "../../utils/AppError";
 import type { IGetServicesParams } from "./service.interface";
+import { createAuditLog } from "../../utils/auditLog";
 
-const createService = async (data: {
-  name: string;
-  description?: string;
-  baseFee: number;
-}) => {
+const createService = async (
+  data: {
+    name: string;
+    description?: string;
+    baseFee: number;
+  },
+  userId: string,
+) => {
   // Check if service already exists
   const existingService = await prisma.service.findUnique({
     where: {
@@ -28,6 +32,18 @@ const createService = async (data: {
       name: data.name,
       description: data.description,
       baseFee: data.baseFee,
+    },
+  });
+
+  // Create audit log
+  await createAuditLog({
+    userId,
+    action: "CREATE",
+    entity: "SERVICE",
+    entityId: service.id,
+    details: {
+      name: service.name,
+      baseFee: service.baseFee,
     },
   });
 
@@ -178,6 +194,7 @@ const updateService = async (
     baseFee?: number;
     isActive?: boolean;
   },
+  userId: string,
 ) => {
   const existingService = await prisma.service.findUnique({
     where: {
@@ -211,9 +228,19 @@ const updateService = async (
     data,
   });
 
+  // Create audit log
+  await createAuditLog({
+    userId,
+    action: "UPDATE",
+    entity: "SERVICE",
+    entityId: service.id,
+    details: {
+      changes: data,
+    },
+  });
+
   return service;
 };
-
 export const serviceService = {
   createService,
   getActiveServices,
