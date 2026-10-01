@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express, {
-  type NextFunction,
   type Request,
   type Response,
 } from "express";
@@ -22,6 +21,7 @@ import { generalRateLimiter } from "./app/middleware/rateLimit";
 import { auditLogRoutes } from "./app/modules/auditLog/audit-log.route";
 import { userRoutes } from "./app/modules/user/user.routes";
 import { dashboardRoutes } from "./app/modules/dashboard/dashboard.routes";
+import { catchAsync } from "./app/utils/catchAsync";
 
 const app = express();
 
@@ -54,28 +54,23 @@ app.use("/api/v1/audit-logs", auditLogRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 
 // Basic route
-app.get("/", async (req: Request, res: Response) => {
+app.get("/", catchAsync(async (_req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: 200,
     success: true,
     message: "City Complaint & Service Platform API is running",
     data: null,
   });
-});
+}));
 
-app.get("/test", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    sendResponse(res, {
-      statusCode: 200,
-      success: true,
-      message: "Welcome to City Complaint and Service Backend",
-      data: null,
-    });
-  } catch (error) {
-    console.log(error);
-    next(error);
-  }
-});
+app.get("/test", catchAsync(async (_req: Request, res: Response) => {
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Welcome to City Complaint and Service Backend",
+    data: null,
+  });
+}));
 
 // 404
 app.use(notFound);

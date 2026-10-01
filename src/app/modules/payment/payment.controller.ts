@@ -3,8 +3,9 @@ import { paymentService } from "./payment.service";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { sendResponse } from "../../utils/sendResponse";
 import { AppError } from "../../utils/AppError";
+import { catchAsync } from "../../utils/catchAsync";
 
-const createPayment = async (req: Request, res: Response) => {
+const createPayment = catchAsync(async (req: Request, res: Response) => {
   const citizenId = req.user?.userId;
 
   if (!citizenId) {
@@ -22,10 +23,10 @@ const createPayment = async (req: Request, res: Response) => {
     message: "Payment session created successfully.",
     data: payment,
   });
-};
+});
 
 // Handle Stripe webhook
-const handleStripeWebhook = async (req: Request, res: Response) => {
+const handleStripeWebhook = catchAsync(async (req: Request, res: Response) => {
   const signature = req.headers["stripe-signature"];
 
   if (!signature || Array.isArray(signature)) {
@@ -40,9 +41,9 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
     message: "Webhook processed successfully.",
     data: null,
   });
-};
+});
 
-const getAllPayments = async (_req: Request, res: Response) => {
+const getAllPayments = catchAsync(async (_req: Request, res: Response) => {
   const payments = await paymentService.getAllPayments();
 
   sendResponse(res, {
@@ -51,9 +52,9 @@ const getAllPayments = async (_req: Request, res: Response) => {
     message: "Payments retrieved successfully.",
     data: payments,
   });
-};
+});
 
-const getMyPayments = async (req: Request, res: Response) => {
+const getMyPayments = catchAsync(async (req: Request, res: Response) => {
   const citizenId = req.user?.userId;
 
   if (!citizenId) {
@@ -71,7 +72,7 @@ const getMyPayments = async (req: Request, res: Response) => {
     message: "Payments retrieved successfully.",
     data: payments,
   });
-};
+});
 
 export const paymentController = {
   createPayment,

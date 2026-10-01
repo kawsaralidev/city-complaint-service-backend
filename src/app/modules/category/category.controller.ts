@@ -3,9 +3,10 @@ import { HttpStatus } from "../../../constants/httpStatus";
 import { categoryService } from "./category.service";
 import { sendResponse } from "../../utils/sendResponse";
 import { AppError } from "../../utils/AppError";
+import { catchAsync } from "../../utils/catchAsync";
 
 // Create Category
-const createCategory = async (req: Request, res: Response) => {
+const createCategory = catchAsync(async (req: Request, res: Response) => {
   const { name, type } = req.body;
   const userId = req.user?.userId as string;
 
@@ -17,10 +18,10 @@ const createCategory = async (req: Request, res: Response) => {
     message: "Category created successfully.",
     data: category,
   });
-};
+});
 
 // Get all active categories
-const getAllCategories = async (req: Request, res: Response) => {
+const getAllCategories = catchAsync(async (req: Request, res: Response) => {
   const role = req.user?.role;
 
   if (!role) {
@@ -35,10 +36,10 @@ const getAllCategories = async (req: Request, res: Response) => {
     message: "Categories retrieved successfully.",
     data: categories,
   });
-};
+});
 
 // Get category by ID
-const getCategoryById = async (req: Request, res: Response) => {
+const getCategoryById = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id as string;
 
   const category = await categoryService.getCategoryById(id);
@@ -49,10 +50,10 @@ const getCategoryById = async (req: Request, res: Response) => {
     message: "Category retrieved successfully.",
     data: category,
   });
-};
+});
 
 // Update category
-const updateCategory = async (req: Request, res: Response) => {
+const updateCategory = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const userId = req.user?.userId as string;
 
@@ -64,10 +65,10 @@ const updateCategory = async (req: Request, res: Response) => {
     message: "Category updated successfully.",
     data: category,
   });
-};
+});
 
 // Update category status
-const updateCategoryStatus = async (req: Request, res: Response) => {
+const updateCategoryStatus = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const { isActive } = req.body;
   const userId = req.user?.userId as string;
@@ -84,10 +85,10 @@ const updateCategoryStatus = async (req: Request, res: Response) => {
     message: "Category status updated successfully.",
     data: category,
   });
-};
+});
 
 // Get all categories for admin
-const getAllCategoriesForAdmin = async (req: Request, res: Response) => {
+const getAllCategoriesForAdmin = catchAsync(async (req: Request, res: Response) => {
   const categories = await categoryService.getAllCategoriesForAdmin();
 
   sendResponse(res, {
@@ -96,7 +97,7 @@ const getAllCategoriesForAdmin = async (req: Request, res: Response) => {
     message: "All categories retrieved successfully.",
     data: categories,
   });
-};
+});
 
 export const categoryController = {
   createCategory,

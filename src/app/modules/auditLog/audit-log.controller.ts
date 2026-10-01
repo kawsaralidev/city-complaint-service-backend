@@ -3,8 +3,9 @@ import { HttpStatus } from "../../../constants/httpStatus";
 import { auditLogService } from "./audit-log.service";
 import { getAllAuditLogsQuerySchema } from "./audit-log.validation";
 import { sendResponse } from "../../utils/sendResponse";
+import { catchAsync } from "../../utils/catchAsync";
 
-const getAllAuditLogs = async (req: Request, res: Response) => {
+const getAllAuditLogs = catchAsync(async (req: Request, res: Response) => {
 	// Validate audit log query parameters
 	const query = getAllAuditLogsQuerySchema.parse(req.query);
 
@@ -35,7 +36,7 @@ const getAllAuditLogs = async (req: Request, res: Response) => {
 		message: "Audit logs retrieved successfully.",
 		data: auditLogs,
 	});
-};
+});
 
 export const auditLogController = {
 	getAllAuditLogs,

@@ -2,8 +2,9 @@ import type { Request, Response } from "express";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { dashboardService } from "./dashboard.service";
 import { sendResponse } from "../../utils/sendResponse";
+import { catchAsync } from "../../utils/catchAsync";
 
-const getAdminDashboardOverview = async (_req: Request, res: Response) => {
+const getAdminDashboardOverview = catchAsync(async (_req: Request, res: Response) => {
 	const dashboard = await dashboardService.getAdminDashboardOverview();
 
 	sendResponse(res, {
@@ -12,10 +13,10 @@ const getAdminDashboardOverview = async (_req: Request, res: Response) => {
 		message: "Admin dashboard overview retrieved successfully.",
 		data: dashboard,
 	});
-};
+});
 
 // Get admin dashboard analytics
-const getAdminDashboardAnalytics = async (_req: Request, res: Response) => {
+const getAdminDashboardAnalytics = catchAsync(async (_req: Request, res: Response) => {
 	const analytics = await dashboardService.getAdminDashboardAnalytics();
 
 	sendResponse(res, {
@@ -24,7 +25,7 @@ const getAdminDashboardAnalytics = async (_req: Request, res: Response) => {
 		message: "Admin dashboard analytics retrieved successfully.",
 		data: analytics,
 	});
-};
+});
 
 export const dashboardController = {
 	getAdminDashboardOverview,

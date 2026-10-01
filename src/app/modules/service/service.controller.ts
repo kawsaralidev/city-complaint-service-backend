@@ -3,8 +3,9 @@ import { HttpStatus } from "../../../constants/httpStatus";
 import { serviceService } from "./service.service";
 import { getServicesQuerySchema } from "./service.validation";
 import { sendResponse } from "../../utils/sendResponse";
+import { catchAsync } from "../../utils/catchAsync";
 
-const createService = async (req: Request, res: Response) => {
+const createService = catchAsync(async (req: Request, res: Response) => {
   const body = req.body;
   const userId = req.user?.userId as string;
   const service = await serviceService.createService(body, userId);
@@ -15,9 +16,9 @@ const createService = async (req: Request, res: Response) => {
     message: "Service created successfully.",
     data: service,
   });
-};
+});
 
-const getActiveServices = async (req: Request, res: Response) => {
+const getActiveServices = catchAsync(async (req: Request, res: Response) => {
   const query = getServicesQuerySchema.parse(req.query);
 
   const services = await serviceService.getActiveServices({
@@ -35,9 +36,9 @@ const getActiveServices = async (req: Request, res: Response) => {
     message: "Services retrieved successfully.",
     data: services,
   });
-};
+});
 
-const getAllServices = async (req: Request, res: Response) => {
+const getAllServices = catchAsync(async (req: Request, res: Response) => {
   const query = getServicesQuerySchema.parse(req.query);
 
   const services = await serviceService.getAllServices({
@@ -55,9 +56,9 @@ const getAllServices = async (req: Request, res: Response) => {
     message: "All services retrieved successfully.",
     data: services,
   });
-};
+});
 
-const updateService = async (req: Request, res: Response) => {
+const updateService = catchAsync(async (req: Request, res: Response) => {
   const serviceId = req.params.id as string;
   const userId = req.user?.userId as string;
 
@@ -73,7 +74,7 @@ const updateService = async (req: Request, res: Response) => {
     message: "Service updated successfully.",
     data: service,
   });
-};
+});
 
 export const serviceController = {
   createService,

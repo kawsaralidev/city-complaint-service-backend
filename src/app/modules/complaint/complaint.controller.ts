@@ -5,9 +5,10 @@ import type { ComplaintStatus } from "../../../../generated/prisma/enums";
 import { uploadToCloudinary } from "../../utils/cloudinary";
 import { sendResponse } from "../../utils/sendResponse";
 import { AppError } from "../../utils/AppError";
+import { catchAsync } from "../../utils/catchAsync";
 
 // Create Complaint
-const createComplaint = async (req: Request, res: Response) => {
+const createComplaint = catchAsync(async (req: Request, res: Response) => {
   const { title, description, location, categoryId } = req.body;
 
   const citizenId = req.user?.userId;
@@ -45,10 +46,10 @@ const createComplaint = async (req: Request, res: Response) => {
     message: "Complaint created successfully.",
     data: complaint,
   });
-};
+});
 
 // Get citizen's complaints
-const getMyComplaints = async (req: Request, res: Response) => {
+const getMyComplaints = catchAsync(async (req: Request, res: Response) => {
   const citizenId = req.user?.userId;
 
   if (!citizenId) {
@@ -66,10 +67,10 @@ const getMyComplaints = async (req: Request, res: Response) => {
     message: "Complaints retrieved successfully.",
     data: complaints,
   });
-};
+});
 
 // Get complaint by ID
-const getComplaintById = async (req: Request, res: Response) => {
+const getComplaintById = catchAsync(async (req: Request, res: Response) => {
   const complaintId = req.params.id as string;
   const userId = req.user?.userId;
   const role = req.user?.role;
@@ -92,10 +93,10 @@ const getComplaintById = async (req: Request, res: Response) => {
     message: "Complaint retrieved successfully.",
     data: complaint,
   });
-};
+});
 
 // Get all complaints
-const getAllComplaints = async (req: Request, res: Response) => {
+const getAllComplaints = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.userId;
   const role = req.user?.role;
 
@@ -125,10 +126,10 @@ const getAllComplaints = async (req: Request, res: Response) => {
     data: result.complaints,
     meta: result.pagination,
   });
-};
+});
 
 // Update Complaint
-const updateComplaint = async (req: Request, res: Response) => {
+const updateComplaint = catchAsync(async (req: Request, res: Response) => {
   const complaintId = req.params.id as string;
   const citizenId = req.user?.userId;
 
@@ -164,10 +165,10 @@ const updateComplaint = async (req: Request, res: Response) => {
     message: "Complaint updated successfully.",
     data: complaint,
   });
-};
+});
 
 // Assign Complaint
-const assignComplaint = async (req: Request, res: Response) => {
+const assignComplaint = catchAsync(async (req: Request, res: Response) => {
   const complaintId = req.params.id as string;
   const assignedBy = req.user?.userId;
   const { officerId } = req.body;
@@ -191,10 +192,10 @@ const assignComplaint = async (req: Request, res: Response) => {
     message: "Complaint assigned successfully.",
     data: result,
   });
-};
+});
 
 // Get Officer's assigned complaints
-const getAssignedComplaints = async (req: Request, res: Response) => {
+const getAssignedComplaints = catchAsync(async (req: Request, res: Response) => {
   const officerId = req.user?.userId;
 
   if (!officerId) {
@@ -212,10 +213,10 @@ const getAssignedComplaints = async (req: Request, res: Response) => {
     message: "Assigned complaints retrieved successfully.",
     data: complaints,
   });
-};
+});
 
 // Update Complaint Status
-const updateComplaintStatus = async (req: Request, res: Response) => {
+const updateComplaintStatus = catchAsync(async (req: Request, res: Response) => {
   const complaintId = req.params.id as string;
   const userId = req.user?.userId;
   const role = req.user?.role;
@@ -241,9 +242,9 @@ const updateComplaintStatus = async (req: Request, res: Response) => {
     message: "Complaint status updated successfully.",
     data: complaint,
   });
-};
+});
 
-const cancelComplaint = async (req: Request, res: Response) => {
+const cancelComplaint = catchAsync(async (req: Request, res: Response) => {
   const citizenId = req.user!.userId;
 
   const result = await complaintService.cancelComplaint(
@@ -257,10 +258,10 @@ const cancelComplaint = async (req: Request, res: Response) => {
     message: "Complaint canceled successfully.",
     data: result,
   });
-};
+});
 
 // Delete Complaint
-const deleteComplaint = async (req: Request, res: Response) => {
+const deleteComplaint = catchAsync(async (req: Request, res: Response) => {
   const complaintId = req.params.id as string;
   const citizenId = req.user?.userId;
 
@@ -275,7 +276,7 @@ const deleteComplaint = async (req: Request, res: Response) => {
     message: "Complaint deleted successfully.",
     data: complaint,
   });
-};
+});
 
 export const complaintController = {
   createComplaint,

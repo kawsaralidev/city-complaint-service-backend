@@ -8,7 +8,7 @@ import {
 import { sendResponse } from "../../utils/sendResponse";
 import { catchAsync } from "../../utils/catchAsync";
 
-const getAllUsers = async (req: Request, res: Response) => {
+const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   const { query } = getAllUsersQuerySchema.parse({
     query: req.query,
   });
@@ -28,10 +28,10 @@ const getAllUsers = async (req: Request, res: Response) => {
     message: "Users retrieved successfully.",
     data: users,
   });
-};
+});
 
 // Update user status
-const updateUserStatus = async (req: Request, res: Response) => {
+const updateUserStatus = catchAsync(async (req: Request, res: Response) => {
   const { params, body } = updateUserStatusSchema.parse({
     params: req.params,
     body: req.body,
@@ -51,7 +51,7 @@ const updateUserStatus = async (req: Request, res: Response) => {
     message: "User status updated successfully.",
     data: user,
   });
-};
+});
 
 const changePassword = catchAsync(async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body;
@@ -67,7 +67,7 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const updateMyProfile = async (req: Request, res: Response) => {
+const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const reqBody = req.body;
   const reqFile = req.file;
@@ -80,7 +80,7 @@ const updateMyProfile = async (req: Request, res: Response) => {
     message: "Profile updated successfully.",
     data: result,
   });
-};
+});
 
 export const userController = {
   getAllUsers,

@@ -9,7 +9,7 @@ import { JwtPayload } from "jsonwebtoken";
 import { catchAsync } from "../../utils/catchAsync.js";
 
 // Register User
-const register = async (req: Request, res: Response) => {
+const register = catchAsync(async (req: Request, res: Response) => {
   // Get registration data from request body
   const result = await authService.register(req.body);
 
@@ -22,10 +22,10 @@ const register = async (req: Request, res: Response) => {
       email: result.email,
     },
   });
-};
+});
 
 // Verify Registration Email
-const verifyRegisterEmail = async (req: Request, res: Response) => {
+const verifyRegisterEmail = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.verifyRegisterEmail(req.body);
 
   // Set access token in HttpOnly cookie
@@ -48,9 +48,9 @@ const verifyRegisterEmail = async (req: Request, res: Response) => {
     message: result.message,
     data: result.user,
   });
-};
+});
 
-const login = async (req: Request, res: Response) => {
+const login = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.login(req.body);
 
   // Set access token in HttpOnly cookie
@@ -75,7 +75,7 @@ const login = async (req: Request, res: Response) => {
       user: result.user,
     },
   });
-};
+});
 
 const demoLogin = catchAsync(async (req: Request, res: Response) => {
   const { role } = req.body;
@@ -106,7 +106,7 @@ const demoLogin = catchAsync(async (req: Request, res: Response) => {
 
 // Google Login
 
-const googleLogin = async (req: Request, res: Response) => {
+const googleLogin = catchAsync(async (req: Request, res: Response) => {
   // Get authenticated Google user
   const user = req.user as
     | {
@@ -141,10 +141,10 @@ const googleLogin = async (req: Request, res: Response) => {
 
   // Redirect user to frontend home page
   res.redirect(`${process.env.FRONTEND_URL}/`);
-};
+});
 
 // Refresh Access Token
-const refreshAccessToken = async (req: Request, res: Response) => {
+const refreshAccessToken = catchAsync(async (req: Request, res: Response) => {
   const { refreshToken } = req.cookies;
 
   const result = await authService.refreshAccessToken(refreshToken);
@@ -162,10 +162,10 @@ const refreshAccessToken = async (req: Request, res: Response) => {
     message: "Access token refreshed successfully.",
     data: null,
   });
-};
+});
 
 // Get Current User
-const getCurrentUser = async (req: Request, res: Response) => {
+const getCurrentUser = catchAsync(async (req: Request, res: Response) => {
   // Get authenticated user ID from request
   let userId = req.user?.userId;
 
@@ -231,10 +231,10 @@ const getCurrentUser = async (req: Request, res: Response) => {
     message: "User profile retrieved successfully.",
     data: result,
   });
-};
+});
 
 // Logout User
-const logout = async (_req: Request, res: Response) => {
+const logout = catchAsync(async (_req: Request, res: Response) => {
   // Clear refresh token from HttpOnly cookie
   res.clearCookie("accessToken");
   res.clearCookie("refreshToken");
@@ -244,7 +244,7 @@ const logout = async (_req: Request, res: Response) => {
     message: "Logout successful.",
     data: null,
   });
-};
+});
 
 const forgotPassword = catchAsync(async (req, res) => {
   const { email } = req.body;

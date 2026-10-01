@@ -4,8 +4,9 @@ import { serviceRequestService } from "./service-request.service";
 import { getAllServiceRequestsQuerySchema } from "./service-request.validation";
 import { sendResponse } from "../../utils/sendResponse";
 import { AppError } from "../../utils/AppError";
+import { catchAsync } from "../../utils/catchAsync";
 
-const createServiceRequest = async (req: Request, res: Response) => {
+const createServiceRequest = catchAsync(async (req: Request, res: Response) => {
   const citizenId = req.user?.userId;
 
   if (!citizenId) {
@@ -27,9 +28,9 @@ const createServiceRequest = async (req: Request, res: Response) => {
     message: "Service request created successfully.",
     data: serviceRequest,
   });
-};
+});
 
-const getAllServiceRequests = async (req: Request, res: Response) => {
+const getAllServiceRequests = catchAsync(async (req: Request, res: Response) => {
   const query = getAllServiceRequestsQuerySchema.parse(req.query);
 
   const serviceRequests = await serviceRequestService.getAllServiceRequests({
@@ -47,9 +48,9 @@ const getAllServiceRequests = async (req: Request, res: Response) => {
     message: "Service requests retrieved successfully.",
     data: serviceRequests,
   });
-};
+});
 
-const getMyServiceRequests = async (req: Request, res: Response) => {
+const getMyServiceRequests = catchAsync(async (req: Request, res: Response) => {
   const citizenId = req.user?.userId;
 
   if (!citizenId) {
@@ -68,9 +69,9 @@ const getMyServiceRequests = async (req: Request, res: Response) => {
     message: "Service requests retrieved successfully.",
     data: serviceRequests,
   });
-};
+});
 
-const getAssignedServiceRequests = async (req: Request, res: Response) => {
+const getAssignedServiceRequests = catchAsync(async (req: Request, res: Response) => {
   const officerId = req.user?.userId;
 
   if (!officerId) {
@@ -89,9 +90,9 @@ const getAssignedServiceRequests = async (req: Request, res: Response) => {
     message: "Assigned service requests retrieved successfully.",
     data: serviceRequests,
   });
-};
+});
 
-const getServiceRequestById = async (req: Request, res: Response) => {
+const getServiceRequestById = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.userId;
   const role = req.user?.role;
 
@@ -116,9 +117,9 @@ const getServiceRequestById = async (req: Request, res: Response) => {
     message: "Service request retrieved successfully.",
     data: serviceRequest,
   });
-};
+});
 
-const UpdateServiceRequestStatus = async (req: Request, res: Response) => {
+const UpdateServiceRequestStatus = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id as string;
 
   const adminId = req.user?.userId;
@@ -142,10 +143,10 @@ const UpdateServiceRequestStatus = async (req: Request, res: Response) => {
     message: `Service request ${req.body.status.toLowerCase()} successfully.`,
     data: serviceRequest,
   });
-};
+});
 
 // Assign service request to officer
-const assignServiceRequest = async (req: Request, res: Response) => {
+const assignServiceRequest = catchAsync(async (req: Request, res: Response) => {
   const adminId = req.user?.userId;
 
   if (!adminId) {
@@ -169,9 +170,9 @@ const assignServiceRequest = async (req: Request, res: Response) => {
     message: "Service request assigned successfully.",
     data: result,
   });
-};
+});
 
-const updateServiceRequestInProgressStatus = async (
+const updateServiceRequestInProgressStatus = catchAsync(async (
   req: Request,
   res: Response,
 ) => {
@@ -199,10 +200,10 @@ const updateServiceRequestInProgressStatus = async (
     message: "Service request status updated successfully.",
     data: serviceRequest,
   });
-};
+});
 
 // Delete Service Request
-const deleteServiceRequest = async (req: Request, res: Response) => {
+const deleteServiceRequest = catchAsync(async (req: Request, res: Response) => {
   const serviceRequestId = req.params.id as string;
   const citizenId = req.user!.userId;
 
@@ -217,7 +218,7 @@ const deleteServiceRequest = async (req: Request, res: Response) => {
     message: "Service request deleted successfully.",
     data: serviceRequest,
   });
-};
+});
 
 export const serviceRequestController = {
   createServiceRequest,
