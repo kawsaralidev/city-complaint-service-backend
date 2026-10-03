@@ -23,7 +23,7 @@ model Complaint {
   category    Category @relation(fields: [categoryId], references: [id])
 
   assignment  Assignment?
-  resolution  Resolution?
+  
 
   @@index([citizenId])
   @@index([categoryId])

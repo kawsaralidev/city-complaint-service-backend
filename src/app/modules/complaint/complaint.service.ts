@@ -142,8 +142,6 @@ const getComplaintById = async (
           },
         },
       },
-
-      resolution: true,
     },
   });
 
@@ -177,13 +175,16 @@ const getAllComplaints = async (
     sortOrder = "desc",
   } = query;
 
-  const currentPage = Number(page);
-  const currentLimit = Number(limit);
+  // Make sure pagination values are numbers
+  const pageNumber = Number(page) || 1;
+  const limitNumber = Number(limit) || 10;
 
-  const skip = (currentPage - 1) * currentLimit;
+  const skip = (pageNumber - 1) * limitNumber;
+
   const where = {
     deletedAt: null,
 
+    // Officer can see only complaints assigned to them
     ...(role === Role.OFFICER && {
       assignment: {
         officerId: userId,
@@ -222,11 +223,28 @@ const getAllComplaints = async (
     }),
   };
 
-  const [complaints, total] = await Promise.all([
-    prisma.complaint.findMany({
+  // Officer complaint priority
+  const statusPriority: Record<string, number> = {
+    ASSIGNED: 1,
+    IN_PROGRESS: 2,
+    COMPLETED: 3,
+    APPROVED: 4,
+    PENDING: 5,
+    REJECTED: 6,
+    CANCELED: 7,
+  };
+
+  // =========================================================
+  // OFFICER
+  // =========================================================
+
+  if (role === Role.OFFICER) {
+    const allComplaints = await prisma.complaint.findMany({
       where,
+
       include: {
         category: true,
+
         citizen: {
           select: {
             id: true,
@@ -234,14 +252,72 @@ const getAllComplaints = async (
             email: true,
           },
         },
+
         assignment: true,
-        resolution: true,
       },
+    });
+
+    // Assigned/In Progress complaints first
+    allComplaints.sort((a, b) => {
+      const priorityA = statusPriority[a.status] ?? 99;
+      const priorityB = statusPriority[b.status] ?? 99;
+
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      const dateA = a.assignment?.assignedAt ?? a.createdAt;
+      const dateB = b.assignment?.assignedAt ?? b.createdAt;
+
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
+
+    const total = allComplaints.length;
+
+    // Exactly 10 complaints per page
+    const complaints = allComplaints.slice(skip, skip + limitNumber);
+
+    return {
+      complaints,
+
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        total,
+        totalPages: Math.ceil(total / limitNumber),
+      },
+    };
+  }
+
+  // =========================================================
+  // ADMIN
+  // =========================================================
+
+  const [complaints, total] = await Promise.all([
+    prisma.complaint.findMany({
+      where,
+
+      include: {
+        category: true,
+
+        citizen: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+
+        assignment: true,
+      },
+
       orderBy: {
         createdAt: sortOrder,
       },
+
+      // Pagination
       skip,
-      take: currentLimit,
+      take: limitNumber,
     }),
 
     prisma.complaint.count({
@@ -251,11 +327,12 @@ const getAllComplaints = async (
 
   return {
     complaints,
+
     pagination: {
-      page,
-      limit,
+      page: pageNumber,
+      limit: limitNumber,
       total,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limitNumber),
     },
   };
 };
@@ -621,7 +698,6 @@ const updateComplaintStatus = async (
         },
       },
       assignment: true,
-      resolution: true,
     },
   });
 

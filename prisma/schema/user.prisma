@@ -21,7 +21,7 @@ model User {
   serviceRequests   ServiceRequest[]
   officerAssignments Assignment[] @relation("OfficerAssignments")
   assignedBy        Assignment[] @relation("AssignedBy")
-  resolutions       Resolution[] @relation("OfficerResolutions")
+
   payments          Payment[]
   auditLogs         AuditLog[]
 
