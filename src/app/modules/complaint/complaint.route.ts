@@ -4,13 +4,13 @@ import { auth } from "../../middleware/auth";
 import { validateRequest } from "../../middleware/validateRequest";
 import { complaintController } from "./complaint.controller";
 import {
-	assignComplaintSchema,
-	adminComplaintStatusSchema,
-	cancelComplaintSchema,
-	createComplaintSchema,
-	getAllComplaintsSchema,
-	updateComplaintSchema,
-	updateComplaintStatusSchema,
+  assignComplaintSchema,
+  adminComplaintStatusSchema,
+  cancelComplaintSchema,
+  createComplaintSchema,
+  getAllComplaintsSchema,
+  updateComplaintSchema,
+  updateComplaintStatusSchema,
 } from "./complaint.validation";
 import { Role } from "../../../../generated/prisma/enums";
 import { upload } from "../../lib/multer";
@@ -18,70 +18,80 @@ import { upload } from "../../lib/multer";
 const router = Router();
 
 router.post(
-	"/",
-	auth(Role.CITIZEN),
-	upload.single("image"),
-	validateRequest(createComplaintSchema),
-	complaintController.createComplaint,
+  "/",
+  auth(Role.CITIZEN),
+  upload.single("image"),
+  validateRequest(createComplaintSchema),
+  complaintController.createComplaint,
 );
 
 router.get("/my", auth(Role.CITIZEN), complaintController.getMyComplaints);
 
 router.get(
-	"/assigned",
-	auth(Role.OFFICER),
-	complaintController.getAssignedComplaints,
+  "/assigned",
+  auth(Role.OFFICER),
+  complaintController.getAssignedComplaints,
 );
 
 router.get(
-	"/:id",
-	auth(Role.CITIZEN, Role.ADMIN, Role.OFFICER),
-	complaintController.getComplaintById,
+  "/officers",
+  auth(Role.ADMIN),
+  complaintController.getActiveOfficers,
 );
 
 router.get(
-	"/",
-	auth(Role.ADMIN, Role.OFFICER),
-	validateRequest(getAllComplaintsSchema),
-	complaintController.getAllComplaints,
+  "/:id",
+  auth(Role.CITIZEN, Role.ADMIN, Role.OFFICER),
+  complaintController.getComplaintById,
+);
+
+router.get(
+  "/",
+  auth(Role.ADMIN, Role.OFFICER),
+  validateRequest(getAllComplaintsSchema),
+  complaintController.getAllComplaints,
 );
 
 router.patch(
-	"/:id",
-	auth(Role.CITIZEN),
-	upload.single("image"),
-	validateRequest(updateComplaintSchema),
-	complaintController.updateComplaint,
+  "/:id",
+  auth(Role.CITIZEN),
+  upload.single("image"),
+  validateRequest(updateComplaintSchema),
+  complaintController.updateComplaint,
 );
 
 router.patch(
-	"/:id/assign",
-	auth(Role.ADMIN),
-	validateRequest(assignComplaintSchema),
-	complaintController.assignComplaint,
+  "/:id/assign",
+  auth(Role.ADMIN),
+  validateRequest(assignComplaintSchema),
+  complaintController.assignComplaint,
 );
 
 router.patch(
-	"/:id/admin-status",
-	auth(Role.ADMIN),
-	validateRequest(adminComplaintStatusSchema),
-	complaintController.updateComplaintStatus,
+  "/:id/admin-status",
+  auth(Role.ADMIN),
+  validateRequest(adminComplaintStatusSchema),
+  complaintController.updateComplaintStatus,
 );
 
 router.patch(
-	"/:id/status",
-	auth(Role.OFFICER),
-	validateRequest(updateComplaintStatusSchema),
-	complaintController.updateComplaintStatus,
+  "/:id/status",
+  auth(Role.OFFICER),
+  validateRequest(updateComplaintStatusSchema),
+  complaintController.updateComplaintStatus,
 );
 
 router.patch(
-	"/:id/cancel",
-	auth(Role.CITIZEN),
-	validateRequest(cancelComplaintSchema),
-	complaintController.cancelComplaint,
+  "/:id/cancel",
+  auth(Role.CITIZEN),
+  validateRequest(cancelComplaintSchema),
+  complaintController.cancelComplaint,
 );
 
-router.delete("/:id", auth(Role.CITIZEN), complaintController.deleteComplaint);
+router.delete(
+  "/:id",
+  auth(Role.CITIZEN, Role.ADMIN),
+  complaintController.deleteComplaint,
+);
 
 export const complaintRoutes = router;

@@ -130,7 +130,18 @@ const getComplaintById = async (
         },
       },
 
-      assignment: true,
+      assignment: {
+        include: {
+          officer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              imageUrl: true,
+            },
+          },
+        },
+      },
 
       resolution: true,
     },
@@ -166,8 +177,10 @@ const getAllComplaints = async (
     sortOrder = "desc",
   } = query;
 
-  const skip = (page - 1) * limit;
+  const currentPage = Number(page);
+  const currentLimit = Number(limit);
 
+  const skip = (currentPage - 1) * currentLimit;
   const where = {
     deletedAt: null,
 
@@ -228,7 +241,7 @@ const getAllComplaints = async (
         createdAt: sortOrder,
       },
       skip,
-      take: limit,
+      take: currentLimit,
     }),
 
     prisma.complaint.count({
@@ -333,6 +346,27 @@ const updateComplaint = async (
   }
 
   return updatedComplaint;
+};
+
+// Get active officers for complaint assignment
+const getActiveOfficers = async () => {
+  const officers = await prisma.user.findMany({
+    where: {
+      role: Role.OFFICER,
+      status: "ACTIVE",
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      imageUrl: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  return officers;
 };
 
 // Assign Complaint
@@ -646,12 +680,16 @@ const cancelComplaint = async (complaintId: string, citizenId: string) => {
 };
 
 // Delete Complaint
-const deleteComplaint = async (complaintId: string, citizenId: string) => {
-  // Check if complaint exists
+// Delete Complaint
+const deleteComplaint = async (
+  complaintId: string,
+  userId: string,
+  role: Role,
+) => {
+  // Find complaint
   const complaint = await prisma.complaint.findFirst({
     where: {
       id: complaintId,
-      citizenId,
       deletedAt: null,
     },
   });
@@ -660,12 +698,43 @@ const deleteComplaint = async (complaintId: string, citizenId: string) => {
     throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
   }
 
-  // Check complaint status
-  if (complaint.status !== ComplaintStatus.PENDING) {
+  // Citizen can delete only their own complaints
+  if (role === Role.CITIZEN && complaint.citizenId !== userId) {
     throw new AppError(
-      HttpStatus.BAD_REQUEST,
-      "Only pending complaints can be deleted.",
+      HttpStatus.FORBIDDEN,
+      "You do not have permission to delete this complaint.",
     );
+  }
+
+  // Citizen can delete:
+  // PENDING, REJECTED, CANCELED
+  if (role === Role.CITIZEN) {
+    const canDelete =
+      complaint.status === ComplaintStatus.PENDING ||
+      complaint.status === ComplaintStatus.REJECTED ||
+      complaint.status === ComplaintStatus.CANCELED;
+
+    if (!canDelete) {
+      throw new AppError(
+        HttpStatus.BAD_REQUEST,
+        "This complaint cannot be deleted in its current status.",
+      );
+    }
+  }
+
+  // Admin can delete only:
+  // REJECTED, CANCELED
+  if (role === Role.ADMIN) {
+    const canDelete =
+      complaint.status === ComplaintStatus.REJECTED ||
+      complaint.status === ComplaintStatus.CANCELED;
+
+    if (!canDelete) {
+      throw new AppError(
+        HttpStatus.BAD_REQUEST,
+        "Admin can only delete rejected or canceled complaints.",
+      );
+    }
   }
 
   // Soft delete complaint
@@ -680,12 +749,14 @@ const deleteComplaint = async (complaintId: string, citizenId: string) => {
 
   // Create audit log
   await createAuditLog({
-    userId: citizenId,
+    userId,
     action: "DELETE_COMPLAINT",
     entity: "Complaint",
     entityId: deletedComplaint.id,
     details: {
       softDeleted: true,
+      deletedByRole: role,
+      previousStatus: complaint.status,
     },
   });
 
@@ -698,6 +769,7 @@ export const complaintService = {
   getComplaintById,
   getAllComplaints,
   updateComplaint,
+  getActiveOfficers,
   assignComplaint,
   getAssignedComplaints,
   updateComplaintStatus,

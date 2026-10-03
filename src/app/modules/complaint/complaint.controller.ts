@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { HttpStatus } from "../../../constants/httpStatus";
 import { complaintService } from "./complaint.service";
-import type { ComplaintStatus } from "../../../../generated/prisma/enums";
+import type { ComplaintStatus, Role } from "../../../../generated/prisma/enums";
 import { uploadToCloudinary } from "../../utils/cloudinary";
 import { sendResponse } from "../../utils/sendResponse";
 import { AppError } from "../../utils/AppError";
@@ -167,6 +167,18 @@ const updateComplaint = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Get Active Officers
+const getActiveOfficers = catchAsync(async (req: Request, res: Response) => {
+  const officers = await complaintService.getActiveOfficers();
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Active officers retrieved successfully.",
+    data: officers,
+  });
+});
+
 // Assign Complaint
 const assignComplaint = catchAsync(async (req: Request, res: Response) => {
   const complaintId = req.params.id as string;
@@ -195,54 +207,58 @@ const assignComplaint = catchAsync(async (req: Request, res: Response) => {
 });
 
 // Get Officer's assigned complaints
-const getAssignedComplaints = catchAsync(async (req: Request, res: Response) => {
-  const officerId = req.user?.userId;
+const getAssignedComplaints = catchAsync(
+  async (req: Request, res: Response) => {
+    const officerId = req.user?.userId;
 
-  if (!officerId) {
-    throw new AppError(
-      HttpStatus.UNAUTHORIZED,
-      "Authenticated user not found.",
-    );
-  }
+    if (!officerId) {
+      throw new AppError(
+        HttpStatus.UNAUTHORIZED,
+        "Authenticated user not found.",
+      );
+    }
 
-  const complaints = await complaintService.getAssignedComplaints(officerId);
+    const complaints = await complaintService.getAssignedComplaints(officerId);
 
-  sendResponse(res, {
-    statusCode: HttpStatus.OK,
-    success: true,
-    message: "Assigned complaints retrieved successfully.",
-    data: complaints,
-  });
-});
+    sendResponse(res, {
+      statusCode: HttpStatus.OK,
+      success: true,
+      message: "Assigned complaints retrieved successfully.",
+      data: complaints,
+    });
+  },
+);
 
 // Update Complaint Status
-const updateComplaintStatus = catchAsync(async (req: Request, res: Response) => {
-  const complaintId = req.params.id as string;
-  const userId = req.user?.userId;
-  const role = req.user?.role;
-  const { status } = req.body;
+const updateComplaintStatus = catchAsync(
+  async (req: Request, res: Response) => {
+    const complaintId = req.params.id as string;
+    const userId = req.user?.userId;
+    const role = req.user?.role;
+    const { status } = req.body;
 
-  if (!userId || !role) {
-    throw new AppError(
-      HttpStatus.UNAUTHORIZED,
-      "Authenticated user not found.",
+    if (!userId || !role) {
+      throw new AppError(
+        HttpStatus.UNAUTHORIZED,
+        "Authenticated user not found.",
+      );
+    }
+
+    const complaint = await complaintService.updateComplaintStatus(
+      complaintId,
+      userId,
+      role,
+      status,
     );
-  }
 
-  const complaint = await complaintService.updateComplaintStatus(
-    complaintId,
-    userId,
-    role,
-    status,
-  );
-
-  sendResponse(res, {
-    statusCode: HttpStatus.OK,
-    success: true,
-    message: "Complaint status updated successfully.",
-    data: complaint,
-  });
-});
+    sendResponse(res, {
+      statusCode: HttpStatus.OK,
+      success: true,
+      message: "Complaint status updated successfully.",
+      data: complaint,
+    });
+  },
+);
 
 const cancelComplaint = catchAsync(async (req: Request, res: Response) => {
   const citizenId = req.user!.userId;
@@ -263,11 +279,13 @@ const cancelComplaint = catchAsync(async (req: Request, res: Response) => {
 // Delete Complaint
 const deleteComplaint = catchAsync(async (req: Request, res: Response) => {
   const complaintId = req.params.id as string;
-  const citizenId = req.user?.userId;
+  const userId = req.user?.userId;
+  const role = req.user?.role;
 
   const complaint = await complaintService.deleteComplaint(
     complaintId,
-    citizenId as string,
+    userId as string,
+    role as Role,
   );
 
   sendResponse(res, {
@@ -284,6 +302,7 @@ export const complaintController = {
   getComplaintById,
   getAllComplaints,
   updateComplaint,
+  getActiveOfficers,
   assignComplaint,
   getAssignedComplaints,
   updateComplaintStatus,

@@ -58,6 +58,11 @@ export const auth = (...requiredRoles: Role[]) => {
         userId: string;
         role: Role;
       };
+      console.log("AUTH USER:", {
+        userId,
+        role,
+        requiredRoles,
+      });
 
       // Check if user has the required role
       if (requiredRoles.length && !requiredRoles.includes(role)) {
