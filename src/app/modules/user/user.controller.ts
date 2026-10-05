@@ -7,6 +7,7 @@ import {
 } from "./user.validation";
 import { sendResponse } from "../../utils/sendResponse";
 import { catchAsync } from "../../utils/catchAsync";
+import { Role } from "../../../../generated/prisma/enums";
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   const { query } = getAllUsersQuerySchema.parse({
@@ -53,6 +54,21 @@ const updateUserStatus = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Update user role
+const updateUserRole = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.params.id as string;
+  const adminId = req.user!.userId;
+
+  const user = await userService.updateUserRole(userId, Role.OFFICER, adminId);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "User role updated successfully.",
+    data: user,
+  });
+});
+
 const changePassword = catchAsync(async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body;
   const userId = req.user!.userId;
@@ -85,6 +101,7 @@ const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
 export const userController = {
   getAllUsers,
   updateUserStatus,
+  updateUserRole,
   changePassword,
   updateMyProfile,
 };

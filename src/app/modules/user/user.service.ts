@@ -15,6 +15,7 @@ import bcrypt from "bcryptjs";
 import config from "../../config";
 import {
   ComplaintStatus,
+  Role,
   ServiceRequestStatus,
 } from "../../../../generated/prisma/enums";
 
@@ -231,6 +232,76 @@ const updateUserStatus = async (
   return updatedUser;
 };
 
+const updateUserRole = async (
+  userId: string,
+  newRole: Role,
+  adminId: string,
+) => {
+  // Find the user
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+      deletedAt: null,
+    },
+  });
+
+  // User not found
+  if (!user) {
+    throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
+  }
+
+  // Only Citizen can be converted to Officer
+  if (user.role !== Role.CITIZEN) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Only citizens can be converted to officers.",
+    );
+  }
+
+  // Only Officer role is allowed for this feature
+  if (newRole !== Role.OFFICER) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Users can only be converted to the Officer role.",
+    );
+  }
+
+  // Update user role
+  const updatedUser = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      role: Role.OFFICER,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      status: true,
+      emailVerified: true,
+      imageUrl: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  // Create audit log
+  await createAuditLog({
+    userId: adminId,
+    action: "UPDATE_USER_ROLE",
+    entity: "User",
+    entityId: userId,
+    details: {
+      previousRole: user.role,
+      newRole: Role.OFFICER,
+    },
+  });
+
+  return updatedUser;
+};
+
 const changePassword = async (
   userId: string,
   currentPassword: string,
@@ -393,6 +464,7 @@ const isOfficerAvailable = async (officerId: string) => {
 export const userService = {
   getAllUsers,
   updateUserStatus,
+  updateUserRole,
   changePassword,
   updateMyProfile,
   isOfficerAvailable,
