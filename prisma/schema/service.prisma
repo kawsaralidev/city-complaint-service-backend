@@ -3,6 +3,8 @@ model Service {
   name        String   @unique
   description String?
   baseFee     Decimal  @db.Decimal(10, 2)
+  imageUrl      String?
+  imagePublicId String?
 
   isActive    Boolean  @default(true)
 

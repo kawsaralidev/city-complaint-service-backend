@@ -3,6 +3,7 @@ import { HttpStatus } from "../../../constants/httpStatus";
 import { AppError } from "../../utils/AppError";
 import type { IGetServicesParams } from "./service.interface";
 import { createAuditLog } from "../../utils/auditLog";
+import { uploadToCloudinary } from "../../utils/cloudinary";
 
 const createService = async (
   data: {
@@ -11,6 +12,7 @@ const createService = async (
     baseFee: number;
   },
   userId: string,
+  image?: Express.Multer.File,
 ) => {
   // Check if service already exists
   const existingService = await prisma.service.findUnique({
@@ -26,30 +28,33 @@ const createService = async (
     );
   }
 
+  let imageUrl: string | undefined;
+  let imagePublicId: string | undefined;
+
+  // Upload service image to Cloudinary
+  if (image) {
+    const uploadedImage = await uploadToCloudinary(
+      image.buffer,
+      "city-complaints/services",
+    );
+
+    imageUrl = uploadedImage.secure_url;
+    imagePublicId = uploadedImage.public_id;
+  }
+
   // Create service
   const service = await prisma.service.create({
     data: {
       name: data.name,
       description: data.description,
       baseFee: data.baseFee,
-    },
-  });
-
-  // Create audit log
-  await createAuditLog({
-    userId,
-    action: "CREATE",
-    entity: "SERVICE",
-    entityId: service.id,
-    details: {
-      name: service.name,
-      baseFee: service.baseFee,
+      imageUrl,
+      imagePublicId,
     },
   });
 
   return service;
 };
-
 const getActiveServices = async ({
   page,
   limit,
@@ -186,6 +191,20 @@ const getAllServices = async ({
   };
 };
 
+const getServiceById = async (serviceId: string) => {
+  const service = await prisma.service.findUnique({
+    where: {
+      id: serviceId,
+    },
+  });
+
+  if (!service) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Service not found.");
+  }
+
+  return service;
+};
+
 const updateService = async (
   serviceId: string,
   data: {
@@ -195,6 +214,7 @@ const updateService = async (
     isActive?: boolean;
   },
   userId: string,
+  image?: Express.Multer.File,
 ) => {
   const existingService = await prisma.service.findUnique({
     where: {
@@ -221,11 +241,29 @@ const updateService = async (
     }
   }
 
+  let imageUrl = existingService.imageUrl;
+  let imagePublicId = existingService.imagePublicId;
+
+  // Upload new service image if provided
+  if (image) {
+    const uploadedImage = await uploadToCloudinary(
+      image.buffer,
+      "city-complaints/services",
+    );
+
+    imageUrl = uploadedImage.secure_url;
+    imagePublicId = uploadedImage.public_id;
+  }
+
   const service = await prisma.service.update({
     where: {
       id: serviceId,
     },
-    data,
+    data: {
+      ...data,
+      imageUrl,
+      imagePublicId,
+    },
   });
 
   // Create audit log
@@ -235,7 +273,10 @@ const updateService = async (
     entity: "SERVICE",
     entityId: service.id,
     details: {
-      changes: data,
+      changes: {
+        ...data,
+        ...(image ? { imageUrl, imagePublicId } : {}),
+      },
     },
   });
 
@@ -245,5 +286,6 @@ export const serviceService = {
   createService,
   getActiveServices,
   getAllServices,
+  getServiceById,
   updateService,
 };

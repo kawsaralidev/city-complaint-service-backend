@@ -4,11 +4,12 @@ import { serviceService } from "./service.service";
 import { getServicesQuerySchema } from "./service.validation";
 import { sendResponse } from "../../utils/sendResponse";
 import { catchAsync } from "../../utils/catchAsync";
+import { AppError } from "../../utils/AppError";
 
 const createService = catchAsync(async (req: Request, res: Response) => {
   const body = req.body;
   const userId = req.user?.userId as string;
-  const service = await serviceService.createService(body, userId);
+  const service = await serviceService.createService(body, userId, req.file);
 
   sendResponse(res, {
     statusCode: HttpStatus.CREATED,
@@ -58,6 +59,23 @@ const getAllServices = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getServiceById = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  if (Array.isArray(id)) {
+    throw new AppError(HttpStatus.BAD_REQUEST, "Invalid service ID.");
+  }
+
+  const service = await serviceService.getServiceById(id);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Service retrieved successfully.",
+    data: service,
+  });
+});
+
 const updateService = catchAsync(async (req: Request, res: Response) => {
   const serviceId = req.params.id as string;
   const userId = req.user?.userId as string;
@@ -66,6 +84,7 @@ const updateService = catchAsync(async (req: Request, res: Response) => {
     serviceId,
     req.body,
     userId,
+    req.file,
   );
 
   sendResponse(res, {
@@ -80,5 +99,6 @@ export const serviceController = {
   createService,
   getActiveServices,
   getAllServices,
+  getServiceById,
   updateService,
 };
