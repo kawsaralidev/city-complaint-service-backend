@@ -23,20 +23,23 @@ const createPayment = async (
     },
   });
 
-  // Throw an error if service request does not exist
   if (!serviceRequest) {
     throw new AppError(HttpStatus.NOT_FOUND, "Service request not found.");
   }
 
-  // Check if service request is approved
-  if (serviceRequest.status !== "APPROVED") {
+  // Payment can be initiated when the request is approved
+  // or when the user is retrying a previously started payment.
+  if (
+    serviceRequest.status !== "APPROVED" &&
+    serviceRequest.status !== "PAYMENT_PENDING"
+  ) {
     throw new AppError(
       HttpStatus.BAD_REQUEST,
       "Only approved service requests can proceed to payment.",
     );
   }
 
-  // Throw an error if payment is already completed
+  // Payment is already completed
   if (serviceRequest.payment?.status === "PAID") {
     throw new AppError(
       HttpStatus.BAD_REQUEST,
@@ -44,40 +47,69 @@ const createPayment = async (
     );
   }
 
+  /*
+   * If the user previously opened Stripe Checkout but did not
+   * complete the payment, try to reuse the existing open session.
+   *
+   * This prevents creating multiple Stripe Checkout sessions
+   * for the same service request.
+   */
+  if (
+    serviceRequest.payment?.status === "PENDING" &&
+    serviceRequest.payment.stripeSessionId
+  ) {
+    const existingSession = await stripe.checkout.sessions.retrieve(
+      serviceRequest.payment.stripeSessionId,
+    );
+
+    if (existingSession.status === "open" && existingSession.url) {
+      return {
+        payment: serviceRequest.payment,
+        checkoutUrl: existingSession.url,
+      };
+    }
+  }
+
   const amount = Number(serviceRequest.amount);
 
-  // Create Stripe Checkout Session
+  // Create a new Stripe Checkout Session
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
+
     line_items: [
       {
         price_data: {
           currency: "bdt",
+
           product_data: {
             name: serviceRequest.service.name,
             description: serviceRequest.service.description || undefined,
           },
+
           unit_amount: Math.round(amount * 100),
         },
+
         quantity: 1,
       },
     ],
+
     metadata: {
       serviceRequestId: serviceRequest.id,
       citizenId,
     },
+
     success_url: config.stripe_success_url,
     cancel_url: config.stripe_cancel_url,
   });
 
-  // Save payment and update service request
+  // Save or update payment
   const payment = await prisma.$transaction(async (tx) => {
     if (serviceRequest.payment) {
-      // Update existing pending payment
       return tx.payment.update({
         where: {
           id: serviceRequest.payment.id,
         },
+
         data: {
           stripeSessionId: session.id,
           status: "PENDING",
@@ -86,7 +118,6 @@ const createPayment = async (
       });
     }
 
-    // Create payment for the first time
     return tx.payment.create({
       data: {
         serviceRequestId: serviceRequest.id,
@@ -99,12 +130,13 @@ const createPayment = async (
     });
   });
 
-  // Update service request status
+  // First payment attempt changes APPROVED → PAYMENT_PENDING
   if (serviceRequest.status === "APPROVED") {
     await prisma.serviceRequest.update({
       where: {
         id: serviceRequest.id,
       },
+
       data: {
         status: "PAYMENT_PENDING",
       },
@@ -117,6 +149,7 @@ const createPayment = async (
     action: "CREATE_PAYMENT",
     entity: "Payment",
     entityId: payment.id,
+
     details: {
       serviceRequestId: serviceRequest.id,
       amount: payment.amount.toString(),
