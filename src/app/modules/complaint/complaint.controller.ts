@@ -72,21 +72,9 @@ const getMyComplaints = catchAsync(async (req: Request, res: Response) => {
 // Get complaint by ID
 const getComplaintById = catchAsync(async (req: Request, res: Response) => {
   const complaintId = req.params.id as string;
-  const userId = req.user?.userId;
-  const role = req.user?.role;
 
-  if (!userId || !role) {
-    throw new AppError(
-      HttpStatus.UNAUTHORIZED,
-      "Authenticated user not found.",
-    );
-  }
+  const complaint = await complaintService.getComplaintById(complaintId);
 
-  const complaint = await complaintService.getComplaintById(
-    complaintId,
-    userId,
-    role,
-  );
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
@@ -123,6 +111,27 @@ const getAllComplaints = catchAsync(async (req: Request, res: Response) => {
     statusCode: HttpStatus.OK,
     success: true,
     message: "Complaints retrieved successfully.",
+    data: result.complaints,
+    meta: result.pagination,
+  });
+});
+
+// Get public complaints
+const getPublicComplaints = catchAsync(async (req: Request, res: Response) => {
+  const result = await complaintService.getPublicComplaints(
+    req.query as {
+      page?: number;
+      limit?: number;
+      search?: string;
+      categoryId?: string;
+      sortOrder?: "asc" | "desc";
+    },
+  );
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Public complaints retrieved successfully.",
     data: result.complaints,
     meta: result.pagination,
   });
@@ -301,6 +310,7 @@ export const complaintController = {
   getMyComplaints,
   getComplaintById,
   getAllComplaints,
+  getPublicComplaints,
   updateComplaint,
   getActiveOfficers,
   assignComplaint,

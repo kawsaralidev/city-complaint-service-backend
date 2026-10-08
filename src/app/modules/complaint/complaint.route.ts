@@ -39,11 +39,14 @@ router.get(
   complaintController.getActiveOfficers,
 );
 
+// Public complaints
 router.get(
-  "/:id",
-  auth(Role.CITIZEN, Role.ADMIN, Role.OFFICER),
-  complaintController.getComplaintById,
+  "/public",
+  validateRequest(getAllComplaintsSchema),
+  complaintController.getPublicComplaints,
 );
+
+router.get("/:id", complaintController.getComplaintById);
 
 router.get(
   "/",

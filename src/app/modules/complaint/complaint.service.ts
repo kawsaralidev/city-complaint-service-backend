@@ -96,56 +96,41 @@ const getMyComplaints = async (citizenId: string) => {
 };
 
 // Get complaint by ID
-const getComplaintById = async (
-  complaintId: string,
-  userId: string,
-  role: Role,
-) => {
+const getComplaintById = async (complaintId: string) => {
   const complaint = await prisma.complaint.findFirst({
     where: {
       id: complaintId,
       deletedAt: null,
-
-      // Citizen can see only their own complaints
-      ...(role === Role.CITIZEN && {
-        citizenId: userId,
-      }),
-
-      // Officer can see only complaints assigned to them
-      ...(role === Role.OFFICER && {
-        assignment: {
-          officerId: userId,
-        },
-      }),
+      status: {
+        in: [
+          ComplaintStatus.APPROVED,
+          ComplaintStatus.ASSIGNED,
+          ComplaintStatus.IN_PROGRESS,
+          ComplaintStatus.COMPLETED,
+        ],
+      },
     },
 
-    include: {
-      category: true,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      location: true,
+      status: true,
+      imageUrl: true,
+      createdAt: true,
+      updatedAt: true,
 
-      citizen: {
+      category: {
         select: {
           id: true,
           name: true,
-          email: true,
-        },
-      },
-
-      assignment: {
-        include: {
-          officer: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              imageUrl: true,
-            },
-          },
+          type: true,
         },
       },
     },
   });
 
-  // Throw an error if complaint does not exist
   if (!complaint) {
     throw new AppError(HttpStatus.NOT_FOUND, "Complaint not found.");
   }
@@ -328,6 +313,108 @@ const getAllComplaints = async (
   return {
     complaints,
 
+    pagination: {
+      page: pageNumber,
+      limit: limitNumber,
+      total,
+      totalPages: Math.ceil(total / limitNumber),
+    },
+  };
+};
+
+// Get public complaints
+const getPublicComplaints = async (query: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  categoryId?: string;
+  sortOrder?: "asc" | "desc";
+}) => {
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    categoryId,
+    sortOrder = "desc",
+  } = query;
+
+  const pageNumber = Number(page) || 1;
+  const limitNumber = Number(limit) || 10;
+
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const where = {
+    deletedAt: null,
+
+    status: {
+      in: [
+        ComplaintStatus.APPROVED,
+        ComplaintStatus.ASSIGNED,
+        ComplaintStatus.IN_PROGRESS,
+        ComplaintStatus.COMPLETED,
+      ],
+    },
+
+    ...(categoryId && {
+      categoryId,
+    }),
+
+    ...(search && {
+      OR: [
+        {
+          title: {
+            contains: search,
+            mode: "insensitive" as const,
+          },
+        },
+        {
+          description: {
+            contains: search,
+            mode: "insensitive" as const,
+          },
+        },
+        {
+          location: {
+            contains: search,
+            mode: "insensitive" as const,
+          },
+        },
+      ],
+    }),
+  };
+
+  const [complaints, total] = await Promise.all([
+    prisma.complaint.findMany({
+      where,
+
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        location: true,
+        imageUrl: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+
+        category: true,
+      },
+
+      orderBy: {
+        createdAt: sortOrder,
+      },
+
+      skip,
+      take: limitNumber,
+    }),
+
+    prisma.complaint.count({
+      where,
+    }),
+  ]);
+
+  return {
+    complaints,
     pagination: {
       page: pageNumber,
       limit: limitNumber,
@@ -844,6 +931,7 @@ export const complaintService = {
   getMyComplaints,
   getComplaintById,
   getAllComplaints,
+  getPublicComplaints,
   updateComplaint,
   getActiveOfficers,
   assignComplaint,

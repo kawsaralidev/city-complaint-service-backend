@@ -16,11 +16,7 @@ router.post(
   serviceController.createService,
 );
 
-router.get(
-  "/",
-  auth(Role.CITIZEN, Role.OFFICER, Role.ADMIN),
-  serviceController.getActiveServices,
-);
+router.get("/", serviceController.getActiveServices);
 
 router.get("/all", auth(Role.ADMIN), serviceController.getAllServices);
 
