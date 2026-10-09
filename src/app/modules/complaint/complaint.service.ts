@@ -96,21 +96,13 @@ const getMyComplaints = async (citizenId: string) => {
 };
 
 // Get complaint by ID
+// Get complaint by ID
 const getComplaintById = async (complaintId: string) => {
   const complaint = await prisma.complaint.findFirst({
     where: {
       id: complaintId,
       deletedAt: null,
-      status: {
-        in: [
-          ComplaintStatus.APPROVED,
-          ComplaintStatus.ASSIGNED,
-          ComplaintStatus.IN_PROGRESS,
-          ComplaintStatus.COMPLETED,
-        ],
-      },
     },
-
     select: {
       id: true,
       title: true,
@@ -137,7 +129,6 @@ const getComplaintById = async (complaintId: string) => {
 
   return complaint;
 };
-
 // Get all complaints
 const getAllComplaints = async (
   query: {
