@@ -107,14 +107,8 @@ const demoLogin = catchAsync(async (req: Request, res: Response) => {
 // Google Login
 
 const googleLogin = catchAsync(async (req: Request, res: Response) => {
-  // Get authenticated Google user
-  const user = req.user as
-    | {
-        id: string;
-      }
-    | undefined;
+  const user = req.user as { id: string } | undefined;
 
-  // Throw an error if Google user is missing
   if (!user?.id) {
     throw new AppError(
       HttpStatus.UNAUTHORIZED,
@@ -122,25 +116,50 @@ const googleLogin = catchAsync(async (req: Request, res: Response) => {
     );
   }
 
-  // Generate authentication tokens
   const result = await authService.googleLogin(user.id);
 
-  // Store access token in an HttpOnly cookie
   res.cookie("accessToken", result.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    path: "/",
   });
 
-  // Store refresh token in an HttpOnly cookie
   res.cookie("refreshToken", result.refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    path: "/",
   });
 
-  // Redirect user to frontend home page
-  res.redirect(`${process.env.FRONTEND_URL}/`);
+  const dashboardRoutes: Record<string, string> = {
+    CITIZEN: "/dashboard/citizen-dashboard",
+    OFFICER: "/dashboard/officer-dashboard",
+    ADMIN: "/dashboard/admin-dashboard",
+  };
+
+  const dashboardPath = dashboardRoutes[result.user.role];
+
+  if (!dashboardPath) {
+    throw new AppError(
+      HttpStatus.FORBIDDEN,
+      "Your account role is not supported.",
+    );
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL;
+
+  if (!frontendUrl) {
+    throw new AppError(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      "Frontend URL is not configured.",
+    );
+  }
+
+  const redirectUrl = new URL(dashboardPath, frontendUrl);
+  redirectUrl.searchParams.set("googleLogin", "success");
+
+  res.redirect(redirectUrl.toString());
 });
 
 // Refresh Access Token
